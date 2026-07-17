@@ -1,0 +1,41 @@
+# Environment & secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Telegram session files
+*.session
+*.session-journal
+
+# Database
+data/*.db
+data/*.db-journal
+
+# Logs
+logs/*.log
+
+# Exports (user-generated)
+exports/*
+!exports/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
