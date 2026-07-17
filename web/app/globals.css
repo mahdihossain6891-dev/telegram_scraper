@@ -66,6 +66,17 @@ code {
   font-size: 0.92rem;
 }
 
+.version-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;

@@ -1,9 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import createPlotlyComponent from "react-plotly.js/factory";
+import Plotly from "plotly.js-dist-min";
 import type { PlotParams } from "react-plotly.js";
 
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+const Plot = createPlotlyComponent(Plotly);
 
 const darkLayout = {
   template: "plotly_dark" as const,

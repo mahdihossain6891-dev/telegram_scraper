@@ -496,6 +496,7 @@ export function DashboardApp({ source, payload }: DashboardAppProps) {
         <div className="sidebar-brand">
           <h2>Telegram Scraper</h2>
           <p>Vercel · export.json mode</p>
+          <span className="version-badge">Dashboard v2</span>
         </div>
         <nav className="sidebar-nav">
           {PAGE_NAMES.map((name) => (
