@@ -9,14 +9,25 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
+call check_env.bat
+if errorlevel 1 exit /b 1
+
 set CHAT_INDEX=%~1
 set LIMIT=%~2
-if "%CHAT_INDEX%"=="" set CHAT_INDEX=1
+if "%CHAT_INDEX%"=="" set CHAT_INDEX=all-private
 if "%LIMIT%"=="" set LIMIT=1000
 
 echo.
-echo === Step 1/4: Scrape chat index %CHAT_INDEX% (limit %LIMIT%) ===
-".venv\Scripts\python.exe" message_scraper.py %CHAT_INDEX% %LIMIT%
+echo === Step 1/4: Scrape ===
+if /I "%CHAT_INDEX%"=="all" (
+    ".venv\Scripts\python.exe" message_scraper.py all %LIMIT%
+) else if /I "%CHAT_INDEX%"=="all-private" (
+    ".venv\Scripts\python.exe" message_scraper.py all-private %LIMIT%
+) else if /I "%CHAT_INDEX%"=="all-groups" (
+    ".venv\Scripts\python.exe" message_scraper.py all-groups %LIMIT%
+) else (
+    ".venv\Scripts\python.exe" message_scraper.py %CHAT_INDEX% %LIMIT%
+)
 if errorlevel 1 exit /b 1
 
 echo.

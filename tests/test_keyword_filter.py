@@ -40,3 +40,8 @@ class TestScanMessageText:
     def test_word_boundary_avoids_partial_match(self) -> None:
         result = scan_message_text("methodology review completed")
         assert result.matched is False
+
+    def test_detects_broader_test_terms(self) -> None:
+        assert scan_message_text("possible drugs shipment").matched is True
+        assert scan_message_text("trafficking update").matched is True
+        assert scan_message_text("illegal guns for sale").matched is True

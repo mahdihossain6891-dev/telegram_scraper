@@ -26,6 +26,14 @@ CHAT_TYPES: tuple[ChatType, ...] = (
     "channel",
 )
 
+SCRAPE_SCOPES: tuple[str, ...] = (
+    "all",
+    "private",
+    "groups",
+    "channels",
+    "non-private",
+)
+
 
 class ChatDiscoveryError(Exception):
     """Raised when chat discovery or selection fails."""
@@ -74,6 +82,26 @@ def _chat_username(entity: object) -> str | None:
     return str(username).strip() if username else None
 
 
+def filter_chats_for_scrape(
+    chats: list[DiscoveredChat],
+    scope: str,
+) -> list[DiscoveredChat]:
+    """Return chats included in a batch scrape scope."""
+    normalized = scope.strip().lower()
+    if normalized == "all":
+        return list(chats)
+    if normalized == "private":
+        return [chat for chat in chats if chat.chat_type == "private chat"]
+    if normalized == "channels":
+        return [chat for chat in chats if chat.chat_type == "channel"]
+    if normalized == "groups":
+        return [chat for chat in chats if chat.chat_type in {"group", "supergroup"}]
+    if normalized == "non-private":
+        return [chat for chat in chats if chat.chat_type != "private chat"]
+    allowed = ", ".join(SCRAPE_SCOPES)
+    raise ChatDiscoveryError(f"Scope must be one of: {allowed}. Got: {scope!r}")
+
+
 class ChatDiscovery:
     """List and select chats from an authenticated Telethon client."""
 
@@ -88,9 +116,13 @@ class ChatDiscovery:
             )
 
         chats: list[DiscoveredChat] = []
+        seen_ids: set[int] = set()
         try:
             index = 0
             async for dialog in self.client.iter_dialogs(limit=limit):
+                if dialog.id in seen_ids:
+                    continue
+                seen_ids.add(dialog.id)
                 index += 1
                 entity = dialog.entity
                 chat = DiscoveredChat(
@@ -115,7 +147,14 @@ class ChatDiscovery:
             logger.error("Unexpected error while listing dialogs: %s", exc)
             raise ChatDiscoveryError(f"Failed to retrieve chats: {exc}") from exc
 
-        logger.info("Discovered %d accessible chat(s)", len(chats))
+        type_counts = {chat_type: 0 for chat_type in CHAT_TYPES}
+        for chat in chats:
+            type_counts[chat.chat_type] = type_counts.get(chat.chat_type, 0) + 1
+        logger.info(
+            "Discovered %d accessible chat(s): %s",
+            len(chats),
+            ", ".join(f"{name}={count}" for name, count in type_counts.items() if count),
+        )
         return chats
 
     @staticmethod

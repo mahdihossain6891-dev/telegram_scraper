@@ -7,5 +7,8 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
+call check_env.bat
+if errorlevel 1 exit /b 1
+
 ".venv\Scripts\python.exe" telegram_client.py
 exit /b %ERRORLEVEL%

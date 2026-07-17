@@ -222,3 +222,34 @@ class TestDiscoverAndSelect:
 
         assert len(chats) == 1
         assert selected is None
+
+
+class TestFilterChatsForScrape:
+    """Tests for batch scrape chat filtering."""
+
+    def _sample_chats(self) -> list[DiscoveredChat]:
+        return [
+            DiscoveredChat(1, "Alice", "private chat", 1),
+            DiscoveredChat(2, "Team", "group", 2),
+            DiscoveredChat(3, "News", "channel", 3),
+            DiscoveredChat(4, "Big Team", "supergroup", 4),
+        ]
+
+    def test_filter_private(self) -> None:
+        from chat_discovery import filter_chats_for_scrape
+
+        chats = filter_chats_for_scrape(self._sample_chats(), "private")
+        assert len(chats) == 1
+        assert chats[0].name == "Alice"
+
+    def test_filter_groups(self) -> None:
+        from chat_discovery import filter_chats_for_scrape
+
+        chats = filter_chats_for_scrape(self._sample_chats(), "groups")
+        assert {chat.name for chat in chats} == {"Team", "Big Team"}
+
+    def test_filter_non_private(self) -> None:
+        from chat_discovery import filter_chats_for_scrape
+
+        chats = filter_chats_for_scrape(self._sample_chats(), "non-private")
+        assert len(chats) == 3

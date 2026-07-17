@@ -13,10 +13,12 @@ from telethon.tl.types import Message as TelethonMessage
 from telethon.tl.types import User as TelethonUser
 
 from chat_discovery import (
+    SCRAPE_SCOPES,
     ChatDiscovery,
     ChatDiscoveryError,
     ChatNotFoundError,
     DiscoveredChat,
+    filter_chats_for_scrape,
     prompt_for_selection,
 )
 from config import Settings, ensure_directories, load_settings
@@ -48,6 +50,21 @@ class ScrapeResult:
     flagged_stored: int
     skipped_duplicates: int
     skipped_no_keyword: int
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class MultiScrapeResult:
+    """Summary of a batch collection run across multiple chats."""
+
+    scope: str
+    requested_limit: int
+    chats_scanned: int
+    total_processed: int
+    total_flagged_stored: int
+    total_skipped_duplicates: int
+    total_skipped_no_keyword: int
+    chat_results: tuple[ScrapeResult, ...]
 
 
 @dataclass(frozen=True)
@@ -130,6 +147,18 @@ def _sender_fields(message: TelethonMessage) -> tuple[int | None, str | None, st
     return sender_id, None, None, None
 
 
+def _extract_message_text(message: TelethonMessage) -> str | None:
+    """Return message body text, including captions when present."""
+    for candidate in (
+        message.message,
+        getattr(message, "raw_text", None),
+        getattr(message, "text", None),
+    ):
+        if candidate and str(candidate).strip():
+            return str(candidate).replace("\u200b", "").strip()
+    return None
+
+
 def parse_telethon_message(message: TelethonMessage, chat_id: int) -> ParsedMessage:
     """Convert a Telethon message into database-ready fields."""
     forward_chat_id, forward_message_id = _forward_info(message)
@@ -140,7 +169,7 @@ def parse_telethon_message(message: TelethonMessage, chat_id: int) -> ParsedMess
         chat_id=chat_id,
         sender_id=sender_id,
         timestamp=message.date,
-        text=message.message,
+        text=_extract_message_text(message),
         media_type=_media_type(message),
         reply_to_message_id=_reply_id(message),
         forward_from_chat_id=forward_chat_id,
@@ -381,6 +410,127 @@ class MessageScraper:
 
         return flagged_stored, skipped_duplicates, skipped_no_keyword
 
+    async def scrape_chats(
+        self,
+        chats: list[DiscoveredChat],
+        limit: int,
+        *,
+        scope: str = "all",
+    ) -> MultiScrapeResult:
+        """Collect flagged messages from every chat in the provided list."""
+        limit = normalize_limit(limit)
+        results: list[ScrapeResult] = []
+
+        for index, chat in enumerate(chats, start=1):
+            print(
+                f"[{index}/{len(chats)}] Scanning {chat.name} "
+                f"({chat.chat_type}, ID {chat.chat_id})..."
+            )
+            logger.info(
+                "Batch scrape %d/%d chat_id=%s name=%r type=%s",
+                index,
+                len(chats),
+                chat.chat_id,
+                chat.name,
+                chat.chat_type,
+            )
+            try:
+                result = await self.scrape_chat(chat, limit=limit)
+            except MessageScrapeError as exc:
+                logger.error(
+                    "Skipping chat_id=%s name=%r after scrape error: %s",
+                    chat.chat_id,
+                    chat.name,
+                    exc,
+                )
+                print(f"    Skipped due to error: {exc}")
+                result = ScrapeResult(
+                    chat_id=chat.chat_id,
+                    chat_name=chat.name,
+                    requested_limit=limit,
+                    processed=0,
+                    flagged_stored=0,
+                    skipped_duplicates=0,
+                    skipped_no_keyword=0,
+                    error=str(exc),
+                )
+            else:
+                print(
+                    f"    Scanned {result.processed}, stored {result.flagged_stored}, "
+                    f"no keyword {result.skipped_no_keyword}, duplicates {result.skipped_duplicates}"
+                )
+            results.append(result)
+
+        return MultiScrapeResult(
+            scope=scope,
+            requested_limit=limit,
+            chats_scanned=len(results),
+            total_processed=sum(result.processed for result in results),
+            total_flagged_stored=sum(result.flagged_stored for result in results),
+            total_skipped_duplicates=sum(result.skipped_duplicates for result in results),
+            total_skipped_no_keyword=sum(result.skipped_no_keyword for result in results),
+            chat_results=tuple(results),
+        )
+
+
+def parse_scrape_target(raw: str) -> tuple[str, str | None]:
+    """Parse CLI target such as ``all``, ``all-private``, or a chat index/ID."""
+    value = raw.strip().lower()
+    if not value:
+        return "single", None
+    if value == "all":
+        return "batch", "all"
+    if value.startswith("all-"):
+        scope = value.removeprefix("all-")
+        if scope in SCRAPE_SCOPES and scope != "all":
+            return "batch", scope
+        allowed = ", ".join(f"all-{scope_name}" for scope_name in SCRAPE_SCOPES if scope_name != "all")
+        raise MessageScrapeError(f"Unknown batch scope {value!r}. Use: all, {allowed}")
+    return "single", raw
+
+
+def print_multi_scrape_summary(result: MultiScrapeResult) -> None:
+    """Print a human-readable batch scrape summary."""
+    print(
+        f"\nBatch keyword-filtered collection complete "
+        f"(scope={result.scope}, limit={result.requested_limit} per chat)\n"
+        f"  Chats scanned:          {result.chats_scanned}\n"
+        f"  Messages scanned:       {result.total_processed}\n"
+        f"  Flagged and stored:     {result.total_flagged_stored}\n"
+        f"  Skipped (no keyword):   {result.total_skipped_no_keyword}\n"
+        f"  Skipped (duplicate):    {result.total_skipped_duplicates}"
+    )
+    chats_with_hits = [item for item in result.chat_results if item.flagged_stored > 0]
+    if chats_with_hits:
+        print("\n  Chats with flagged messages:")
+        for item in chats_with_hits:
+            print(
+                f"    - {item.chat_name} (ID: {item.chat_id}): "
+                f"{item.flagged_stored} stored / {item.processed} scanned"
+            )
+    else:
+        print("\n  No keyword matches were stored. Check that test messages use terms from keyword_filter.py.")
+
+    scanned_without_hits = [
+        item
+        for item in result.chat_results
+        if item.flagged_stored == 0 and item.processed > 0 and not item.error
+    ]
+    if scanned_without_hits:
+        print(f"\n  DMs/chats scanned with no keyword match ({len(scanned_without_hits)}):")
+        for item in scanned_without_hits[:25]:
+            print(
+                f"    - {item.chat_name}: {item.processed} message(s) scanned, 0 flagged"
+            )
+        if len(scanned_without_hits) > 25:
+            print(f"    ... and {len(scanned_without_hits) - 25} more")
+
+    failed = [item for item in result.chat_results if item.error]
+    if failed:
+        print(f"\n  Chats skipped due to errors ({len(failed)}):")
+        for item in failed[:10]:
+            print(f"    - {item.chat_name}: {item.error}")
+
 
 async def scrape_selected_chat(
     chat: DiscoveredChat,
@@ -419,10 +569,10 @@ async def _async_main() -> int:
     setup_logging(cfg)
     init_db(cfg)
 
-    argv_selection: str | None = None
+    argv_target: str | None = None
     argv_limit: int | None = None
     if len(sys.argv) >= 2 and sys.argv[1].strip():
-        argv_selection = sys.argv[1].strip()
+        argv_target = sys.argv[1].strip()
     if len(sys.argv) >= 3 and sys.argv[2].strip():
         try:
             argv_limit = parse_limit_input(sys.argv[2].strip())
@@ -441,13 +591,48 @@ async def _async_main() -> int:
             print(f"Authentication required: {exc}", file=sys.stderr)
             return 1
 
+        try:
+            mode, selection = (
+                parse_scrape_target(argv_target) if argv_target else ("single", None)
+            )
+        except MessageScrapeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
         discovery = ChatDiscovery(client)
-        chats = await discovery.fetch_chats()
-        discovery.display_chats(chats)
+        chats = await discovery.fetch_chats(limit=None)
+        if mode != "batch":
+            discovery.display_chats(chats)
         if not chats:
             return 0
 
-        selection = argv_selection or prompt_for_selection()
+        try:
+            limit = argv_limit if argv_limit is not None else prompt_for_limit(default=500)
+        except MessageScrapeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        scraper = MessageScraper(client, cfg)
+
+        if mode == "batch":
+            scope = selection or "all"
+            selected_chats = filter_chats_for_scrape(chats, scope)
+            if not selected_chats:
+                print(f"No chats matched scope {scope!r}.", file=sys.stderr)
+                return 1
+
+            private_count = sum(1 for chat in selected_chats if chat.chat_type == "private chat")
+            print(
+                f"\nBatch scrape: {len(selected_chats)} chat(s), "
+                f"scope={scope!r}, limit={limit} messages per chat"
+            )
+            if scope == "private":
+                print(f"  Private DMs to scan: {private_count}")
+            batch_result = await scraper.scrape_chats(selected_chats, limit=limit, scope=scope)
+            print_multi_scrape_summary(batch_result)
+            return 0
+
+        selection = selection or prompt_for_selection()
         if not selection:
             print("No chat selected.")
             return 0
@@ -460,18 +645,11 @@ async def _async_main() -> int:
 
         if selected.chat_type == "private chat":
             print(
-                "Warning: private chats are not recommended for OSINT collection. "
-                "Pick a channel or group instead.",
+                "Note: each private chat is a separate person. "
+                "Use `all-private` to scrape every DM at once.",
                 file=sys.stderr,
             )
 
-        try:
-            limit = argv_limit if argv_limit is not None else prompt_for_limit()
-        except MessageScrapeError as exc:
-            print(str(exc), file=sys.stderr)
-            return 1
-
-        scraper = MessageScraper(client, cfg)
         result = await scraper.scrape_chat(selected, limit=limit)
         print(
             f"\nKeyword-filtered collection complete for {result.chat_name} "
@@ -481,6 +659,11 @@ async def _async_main() -> int:
             f"  Skipped (no keyword): {result.skipped_no_keyword}\n"
             f"  Skipped (duplicate):  {result.skipped_duplicates}"
         )
+        if result.flagged_stored == 0:
+            print(
+                "\nNo keyword matches stored. Dummy texts must include terms like "
+                "cocaine, meth, ghost gun, human trafficking, etc."
+            )
         return 0
     except (ChatDiscoveryError, MessageScrapeError) as exc:
         logger.error("Message scraping failed: %s", exc)

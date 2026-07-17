@@ -156,6 +156,165 @@ After a full reset, re-fill `.env`, run `auth.bat`, then scrape again.
 
 Launch with `dashboard.bat` → http://localhost:8501
 
+## Deploy dashboard on Streamlit Cloud (recommended)
+
+Streamlit Cloud cannot run the Telethon scraper, SQLite, or Telegram login. It **can** host the **read-only dashboard** from `app.py` using exported JSON.
+
+Architecture:
+
+```
+Local PC: auth → scrape → export.json → streamlit_export.bat
+GitHub:   code + demo/export.sample.json (or your real demo/export.json)
+Streamlit Cloud: app.py reads export.json
+```
+
+### 1. Export data locally
+
+```powershell
+.\export.bat
+.\streamlit_export.bat
+```
+
+This copies `exports/export.json` → `demo/export.json`.
+
+Review the JSON and remove anything sensitive before committing.
+
+### 2. Push to GitHub
+
+Commit the app and sample data (minimum for a working demo):
+
+```powershell
+git add app.py dashboard.py export_dashboard.py demo/export.sample.json .streamlit requirements.txt
+git commit -m "Prepare Streamlit Cloud deployment"
+git push
+```
+
+To publish **your real scraped data** (gitignored by default):
+
+```powershell
+git add -f demo/export.json
+git commit -m "Update Streamlit dashboard data"
+git push
+```
+
+### 3. Create Streamlit Cloud app
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. **New app** → select your GitHub repo
+3. **Main file path:** `app.py`
+4. Deploy
+
+The app starts in **export-only mode** using `demo/export.sample.json` until you push `demo/export.json`.
+
+### 4. Optional secrets
+
+You only need secrets if you plan to run the full SQLite dashboard on Streamlit (not typical). For export-only viewing, skip secrets.
+
+If needed, in Streamlit → App settings → Secrets:
+
+```toml
+TELEGRAM_API_ID = "your_api_id"
+TELEGRAM_API_HASH = "your_api_hash"
+TELEGRAM_PHONE = "+1234567890"
+```
+
+See `.streamlit/secrets.toml.example`.
+
+### 5. Update data later
+
+```powershell
+.\export.bat
+.\streamlit_export.bat
+git add -f demo/export.json
+git commit -m "Refresh dashboard export"
+git push
+```
+
+Streamlit Cloud redeploys on push (or use **Reboot app** in the dashboard).
+
+### What to tell your boss
+
+| Runs on Streamlit Cloud | Runs locally only |
+|---|---|
+| Read-only dashboard | Telegram authentication |
+| Overview / chats / messages / search | Message scraping |
+| Public demo URL | SQLite database |
+| | API credentials (`.env`) |
+
+## Deploy dashboard on Vercel (alternative)
+
+Vercel cannot run the Telethon scraper, SQLite, or Telegram login. It **can** host the **read-only web dashboard** in `web/`.
+
+Architecture:
+
+```
+Local PC: auth → scrape → export.json
+GitHub:   code + optional sanitized export.json
+Vercel:   Next.js dashboard (reads export.json)
+```
+
+### 1. Export data locally
+
+```powershell
+.\export.bat
+.\vercel_export.bat
+```
+
+This copies `exports/export.json` → `web/public/data/export.json`.
+
+Review the JSON and remove anything sensitive before committing.
+
+### 2. Push to GitHub
+
+```powershell
+git add web vercel_export.bat
+git commit -m "Add Vercel dashboard"
+git push
+```
+
+### 3. Create Vercel project
+
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your GitHub repo
+3. Set **Root Directory** to `web`
+4. Framework: **Next.js** (auto-detected)
+5. Deploy
+
+Your live URL will look like `https://your-project.vercel.app`.
+
+### 4. Update data later
+
+After new scrapes:
+
+```powershell
+.\export.bat
+.\vercel_export.bat
+git add web/public/data/export.json
+git commit -m "Update dashboard data"
+git push
+```
+
+Vercel redeploys automatically.
+
+### Optional: remote JSON URL
+
+In Vercel → Project → Settings → Environment Variables:
+
+```
+EXPORT_JSON_URL = https://your-host/export.json
+```
+
+Then you do not need to commit export files to git.
+
+### What to tell your boss
+
+| Runs on Vercel | Runs locally only |
+|---|---|
+| Read-only dashboard | Telegram authentication |
+| Search / chat stats | Message scraping |
+| Public demo URL | SQLite database |
+| | API credentials (`.env`) |
+
 ## Security notes
 
 - Use only on data you are authorized to access

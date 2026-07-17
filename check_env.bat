@@ -1,5 +1,5 @@
 @echo off
-REM Launch the Streamlit dashboard in the default browser.
+REM Validate .env before running Telegram commands.
 cd /d "%~dp0"
 
 if not exist ".venv\Scripts\python.exe" (
@@ -7,5 +7,5 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-".venv\Scripts\python.exe" -m streamlit run app.py --server.headless false
+".venv\Scripts\python.exe" check_env.py
 exit /b %ERRORLEVEL%

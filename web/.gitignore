@@ -1,0 +1,6 @@
+# Dependencies
+node_modules/
+.next/
+
+# Real export data (may contain sensitive OSINT). Use export.sample.json in git.
+public/data/export.json

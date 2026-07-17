@@ -39,3 +39,12 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Vercel web dashboard
+web/node_modules/
+web/.next/
+web/public/data/export.json
+
+# Streamlit Cloud
+.streamlit/secrets.toml
+demo/export.json

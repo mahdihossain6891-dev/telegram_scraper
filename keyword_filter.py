@@ -26,12 +26,15 @@ KEYWORDS_BY_CATEGORY: dict[Category, tuple[str, ...]] = {
         "smuggling drugs",
         "illicit drugs",
         "synthetic drugs",
+        "drug",
+        "drugs",
     ),
     "human_trafficking": (
         "human trafficking",
         "sex trafficking",
         "trafficking victims",
         "trafficking ring",
+        "trafficking",
         "forced labor",
         "forced labour",
         "modern slavery",
@@ -56,6 +59,14 @@ KEYWORDS_BY_CATEGORY: dict[Category, tuple[str, ...]] = {
         "assault rifle sale",
         "arms trafficking",
         "gun running",
+        "gun",
+        "guns",
+        "weapon",
+        "weapons",
+        "firearm",
+        "firearms",
+        "smuggling",
+        "smuggle",
     ),
 }
 
@@ -109,10 +120,11 @@ def scan_message_text(text: str | None) -> KeywordScanResult:
     if not text or not text.strip():
         return KeywordScanResult(hits=())
 
+    normalized = text.replace("\u200b", "").strip()
     hits: list[KeywordHit] = []
     for category, patterns in _PATTERNS.items():
         for keyword, pattern in patterns:
-            if pattern.search(text):
+            if pattern.search(normalized):
                 hits.append(KeywordHit(category=category, keyword=keyword))
 
     return KeywordScanResult(hits=tuple(hits))

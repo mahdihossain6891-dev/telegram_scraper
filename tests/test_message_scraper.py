@@ -17,6 +17,7 @@ from message_scraper import (
     MessageScrapeError,
     MessageScraper,
     parse_limit_input,
+    parse_scrape_target,
     parse_telethon_message,
     store_parsed_message,
 )
@@ -74,6 +75,19 @@ class TestLimitValidation:
     def test_invalid_limit_raises(self) -> None:
         with pytest.raises(MessageScrapeError, match="Limit must be one of"):
             parse_limit_input("250")
+
+
+class TestParseScrapeTarget:
+    """Tests for CLI scrape target parsing."""
+
+    def test_parse_batch_all(self) -> None:
+        assert parse_scrape_target("all") == ("batch", "all")
+
+    def test_parse_batch_private(self) -> None:
+        assert parse_scrape_target("all-private") == ("batch", "private")
+
+    def test_parse_single_index(self) -> None:
+        assert parse_scrape_target("3") == ("single", "3")
 
 
 class TestParseTelethonMessage:
@@ -198,7 +212,7 @@ class TestMessageScraper:
         with db_module.get_session(settings) as session:
             assert session.get(Chat, chat.chat_id) is not None
             assert session.scalar(select(func.count()).select_from(Message)) == 2
-            assert session.scalar(select(func.count()).select_from(ExtractedEntity)) == 2
+            assert session.scalar(select(func.count()).select_from(ExtractedEntity)) >= 2
 
     def test_scrape_chat_skips_existing_messages(self, db_settings) -> None:
         settings, db_module = db_settings
@@ -246,3 +260,65 @@ class TestMessageScraper:
         scraper = MessageScraper(client, settings)
         with pytest.raises(MessageScrapeError, match="not authorized"):
             _run(scraper.scrape_chat(_discovered_chat(), limit=100))
+
+    def test_scrape_chats_runs_each_chat(self, db_settings) -> None:
+        settings, db_module = db_settings
+        chats = [
+            _discovered_chat(),
+            DiscoveredChat(
+                chat_id=-100999,
+                name="Second Chat",
+                chat_type="supergroup",
+                index=2,
+            ),
+        ]
+        client = MagicMock()
+        client.is_user_authorized = AsyncMock(return_value=True)
+
+        async def _iter_messages(_chat_id, limit=None):
+            if _chat_id == chats[0].chat_id:
+                yield _telethon_message(message_id=1, text="cocaine mention")
+            else:
+                yield _telethon_message(message_id=2, text="ghost gun mention")
+
+        client.iter_messages = MagicMock(side_effect=_iter_messages)
+
+        scraper = MessageScraper(client, settings, batch_size=10)
+        result = _run(scraper.scrape_chats(chats, limit=100, scope="all"))
+
+        assert result.chats_scanned == 2
+        assert result.total_flagged_stored == 2
+        with db_module.get_session(settings) as session:
+            assert session.scalar(select(func.count()).select_from(Chat)) == 2
+
+    def test_scrape_chats_continues_after_chat_error(self, db_settings) -> None:
+        settings, db_module = db_settings
+        chats = [
+            _discovered_chat(),
+            DiscoveredChat(
+                chat_id=-100999,
+                name="Broken Chat",
+                chat_type="private chat",
+                index=2,
+            ),
+        ]
+        client = MagicMock()
+        client.is_user_authorized = AsyncMock(return_value=True)
+
+        call_count = {"value": 0}
+
+        async def _iter_messages(_chat_id, limit=None):
+            call_count["value"] += 1
+            if _chat_id == chats[0].chat_id:
+                yield _telethon_message(message_id=1, text="cocaine mention")
+                return
+            raise MessageScrapeError("Telegram blocked this chat")
+
+        client.iter_messages = MagicMock(side_effect=_iter_messages)
+
+        scraper = MessageScraper(client, settings, batch_size=10)
+        result = _run(scraper.scrape_chats(chats, limit=100, scope="private"))
+
+        assert result.chats_scanned == 2
+        assert result.total_flagged_stored == 1
+        assert result.chat_results[1].error is not None

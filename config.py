@@ -51,6 +51,12 @@ def _require_env(key: str) -> str:
     """Return a required environment variable or raise a clear error."""
     value = os.getenv(key)
     if value is None or value.strip() == "":
+        env_path = PROJECT_ROOT / ".env"
+        if env_path.is_file():
+            raise ValueError(
+                f"{key} is empty in .env. Open {env_path}, add your value from "
+                f"https://my.telegram.org/apps, save the file, then retry."
+            )
         raise ValueError(
             f"Missing required environment variable: {key}. "
             f"Copy .env.example to .env and fill in the values."
@@ -115,6 +121,38 @@ def load_settings() -> Settings:
         telegram_api_id=api_id,
         telegram_api_hash=api_hash,
         telegram_phone=phone,
+        telegram_session_name=session_name,
+        database_url=database_url,
+        log_level=log_level,
+        log_file=log_file,
+        data_dir=data_dir,
+        exports_dir=exports_dir,
+        project_root=PROJECT_ROOT,
+    )
+
+
+def load_minimal_settings() -> Settings:
+    """Load path settings for export-only dashboard mode without Telegram credentials."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+    log_file = _resolve_path(
+        os.getenv("LOG_FILE", "logs/app.log").strip(),
+        PROJECT_ROOT,
+    )
+    data_dir = _resolve_path(
+        os.getenv("DATA_DIR", "data").strip(),
+        PROJECT_ROOT,
+    )
+    exports_dir = _resolve_path(
+        os.getenv("EXPORTS_DIR", "exports").strip(),
+        PROJECT_ROOT,
+    )
+    database_url = os.getenv("DATABASE_URL", "sqlite:///data/telegram_scraper.db").strip()
+    session_name = os.getenv("TELEGRAM_SESSION_NAME", "telegram_scraper").strip()
+
+    return Settings(
+        telegram_api_id=0,
+        telegram_api_hash="dashboard-only",
+        telegram_phone=None,
         telegram_session_name=session_name,
         database_url=database_url,
         log_level=log_level,
