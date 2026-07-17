@@ -1,0 +1,96 @@
+{
+  "exported_at": "2026-01-01T00:00:00+00:00",
+  "counts": {
+    "chats": 2,
+    "users": 1,
+    "messages": 2,
+    "entities": 3
+  },
+  "chats": [
+    {
+      "id": 100,
+      "title": "Demo Channel",
+      "username": "demo_channel",
+      "chat_type": "channel",
+      "created_at": null,
+      "updated_at": null
+    },
+    {
+      "id": 200,
+      "title": "Demo Contact",
+      "username": null,
+      "chat_type": "private chat",
+      "created_at": null,
+      "updated_at": null
+    }
+  ],
+  "users": [
+    {
+      "id": 300,
+      "username": "demo_user",
+      "first_name": "Demo",
+      "last_name": null,
+      "created_at": null,
+      "updated_at": null
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "message_id": 1,
+      "chat_id": 100,
+      "sender_id": 300,
+      "timestamp": "2026-01-15T10:00:00+00:00",
+      "text": "Sample flagged message about cocaine shipment",
+      "media_type": null,
+      "reply_to_message_id": null,
+      "forward_from_chat_id": null,
+      "forward_from_message_id": null,
+      "views": null,
+      "scraped_at": null
+    },
+    {
+      "id": 2,
+      "message_id": 2,
+      "chat_id": 200,
+      "sender_id": 300,
+      "timestamp": "2026-01-15T11:00:00+00:00",
+      "text": "Sample DM mentioning ghost gun",
+      "media_type": null,
+      "reply_to_message_id": null,
+      "forward_from_chat_id": null,
+      "forward_from_message_id": null,
+      "views": null,
+      "scraped_at": null
+    }
+  ],
+  "entities": [
+    {
+      "id": 1,
+      "message_row_id": 1,
+      "entity_type": "narcotics",
+      "entity_value": "cocaine",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": null
+    },
+    {
+      "id": 2,
+      "message_row_id": 2,
+      "entity_type": "firearms",
+      "entity_value": "ghost gun",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": null
+    },
+    {
+      "id": 3,
+      "message_row_id": 1,
+      "entity_type": "domain",
+      "entity_value": "example.com",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": null
+    }
+  ]
+}
