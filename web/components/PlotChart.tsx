@@ -14,7 +14,31 @@ const darkLayout = {
   margin: { t: 48, r: 16, b: 48, l: 48 },
 };
 
-export function PlotChart({ layout, ...props }: PlotParams) {
+type SimpleLayout = {
+  title?: string;
+  barmode?: "stack" | "group" | "relative" | "overlay";
+  height?: number;
+  xaxis?: { title?: string };
+  yaxis?: { title?: string };
+};
+
+function buildLayout(layout?: SimpleLayout): PlotParams["layout"] {
+  const axisTitle = (value?: string) => (value ? { title: { text: value } } : undefined);
+
+  return {
+    ...darkLayout,
+    ...(layout?.barmode ? { barmode: layout.barmode } : {}),
+    ...(layout?.height ? { height: layout.height } : {}),
+    ...(layout?.title ? { title: { text: layout.title } } : {}),
+    ...(layout?.xaxis?.title ? { xaxis: axisTitle(layout.xaxis.title) } : {}),
+    ...(layout?.yaxis?.title ? { yaxis: axisTitle(layout.yaxis.title) } : {}),
+  };
+}
+
+export function PlotChart({
+  layout,
+  ...props
+}: Omit<PlotParams, "layout"> & { layout?: SimpleLayout }) {
   return (
     <div className="chart-wrap">
       <Plot
@@ -22,7 +46,7 @@ export function PlotChart({ layout, ...props }: PlotParams) {
         useResizeHandler
         style={{ width: "100%", height: "100%" }}
         config={{ displayModeBar: false, responsive: true }}
-        layout={{ ...darkLayout, ...layout }}
+        layout={buildLayout(layout)}
       />
     </div>
   );
