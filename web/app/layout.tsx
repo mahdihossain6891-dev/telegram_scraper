@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Telegram Intelligence Dashboard",
-  description: "Read-only OSINT dashboard deployed on Vercel",
+  title: "Telegram Intelligence Scraper",
+  description: "Read-only OSINT dashboard matching the Streamlit export view",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
