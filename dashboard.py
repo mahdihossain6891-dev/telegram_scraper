@@ -26,6 +26,13 @@ from export_dashboard import ExportDashboardData, find_export_file, load_export_
 from exporter import run_export
 from models import Chat, ExtractedEntity, Message, User
 
+
+def _with_session(settings: Settings, callback: Callable[[Session, AnalyticsEngine], None]) -> None:
+    init_db(settings)
+    with get_session(settings) as session:
+        callback(session, AnalyticsEngine(session))
+
+
 PRIVATE_CHAT_TYPE = "private chat"
 PAGE_NAMES: tuple[str, ...] = (
     "Overview",
@@ -907,6 +914,106 @@ def _format_timestamp(value: datetime | None) -> str:
     return value.isoformat(sep=" ", timespec="seconds")
 
 
+AUTO_REFRESH_OPTIONS: dict[str, int | None] = {
+    "Off": None,
+    "Every 30 seconds": 30,
+    "Every 1 minute": 60,
+    "Every 5 minutes": 300,
+}
+AUTO_REFRESH_QUERY_KEY = "refresh"
+VALID_AUTO_REFRESH_SECONDS = {
+    seconds for seconds in AUTO_REFRESH_OPTIONS.values() if seconds is not None
+}
+
+
+def parse_refresh_query_param(raw: str | None) -> int | None:
+    """Return a validated refresh interval from a URL query parameter."""
+    if not raw:
+        return None
+    try:
+        seconds = int(raw)
+    except ValueError:
+        return None
+    return seconds if seconds in VALID_AUTO_REFRESH_SECONDS else None
+
+
+def choice_index_for_refresh_seconds(seconds: int | None) -> int:
+    """Map a refresh interval to the selectbox option index."""
+    labels = list(AUTO_REFRESH_OPTIONS.keys())
+    if seconds is None:
+        return 0
+    for index, label in enumerate(labels):
+        if AUTO_REFRESH_OPTIONS[label] == seconds:
+            return index
+    return 0
+
+
+def build_auto_refresh_reload_script(seconds: int) -> str:
+    """Build JS that reloads the page while preserving the refresh interval."""
+    return f"""
+        <script>
+            setTimeout(function() {{
+                var url = new URL(window.parent.location.href);
+                url.searchParams.set("{AUTO_REFRESH_QUERY_KEY}", "{seconds}");
+                window.parent.location.href = url.toString();
+            }}, {seconds * 1000});
+        </script>
+        """
+
+
+def _read_refresh_query_param(st: Any) -> int | None:
+    """Read the persisted auto-refresh interval from Streamlit query params."""
+    raw = st.query_params.get(AUTO_REFRESH_QUERY_KEY)
+    if isinstance(raw, list):
+        raw = raw[0] if raw else None
+    return parse_refresh_query_param(str(raw) if raw is not None else None)
+
+
+def _sync_refresh_query_param(st: Any, seconds: int | None) -> None:
+    """Keep the URL query param aligned with the sidebar selection."""
+    current = _read_refresh_query_param(st)
+    if seconds == current:
+        return
+    if seconds:
+        st.query_params[AUTO_REFRESH_QUERY_KEY] = str(seconds)
+    elif AUTO_REFRESH_QUERY_KEY in st.query_params:
+        del st.query_params[AUTO_REFRESH_QUERY_KEY]
+
+
+def _render_auto_refresh_sidebar(st: Any) -> int | None:
+    """Render auto-refresh controls and return the interval in seconds."""
+    st.sidebar.markdown("### Live updates")
+    query_seconds = _read_refresh_query_param(st)
+    labels = list(AUTO_REFRESH_OPTIONS.keys())
+    choice = st.sidebar.selectbox(
+        "Auto-refresh dashboard",
+        options=labels,
+        index=choice_index_for_refresh_seconds(query_seconds),
+        help="Reload dashboard data on a timer. Local SQLite/export files refresh immediately. "
+        "Streamlit Cloud only updates after auto_update.bat pushes new export data.",
+    )
+    seconds = AUTO_REFRESH_OPTIONS[choice]
+    _sync_refresh_query_param(st, seconds)
+    if seconds:
+        st.sidebar.caption(f"Last refresh: {datetime.now().strftime('%H:%M:%S')}")
+    return seconds
+
+
+def _apply_auto_refresh(st: Any, seconds: int | None) -> None:
+    """Schedule a non-blocking browser refresh for Streamlit."""
+    if not seconds:
+        return
+
+    import streamlit.components.v1 as components
+
+    st.sidebar.caption(f"Auto-refresh enabled ({seconds}s)")
+    components.html(
+        build_auto_refresh_reload_script(seconds),
+        height=0,
+        width=0,
+    )
+
+
 def _apply_streamlit_secrets() -> None:
     """Copy Streamlit Cloud secrets into environment variables."""
     try:
@@ -937,9 +1044,14 @@ def _load_settings_or_none() -> Settings | None:
     return None
 
 
-def _render_export_dashboard(st: Any, settings: Settings, export_data: ExportDashboardData) -> None:
+def _render_export_dashboard(
+    st: Any,
+    settings: Settings,
+    export_data: ExportDashboardData,
+) -> int | None:
     st.sidebar.title("Telegram Scraper")
     st.sidebar.caption("Streamlit Cloud · export.json mode")
+    refresh_seconds = _render_auto_refresh_sidebar(st)
     page = st.sidebar.radio(
         "Navigate",
         ("Overview", "Chats", "Messages", "Keywords", "Analytics", "Entities", "Search"),
@@ -1036,11 +1148,7 @@ def _render_export_dashboard(st: Any, settings: Settings, export_data: ExportDas
         st.write(f"{len(rows)} result(s)")
         st.dataframe(pd.DataFrame(rows[:200]), use_container_width=True, hide_index=True)
 
-
-def _with_session(settings: Settings, callback: Callable[[Session, AnalyticsEngine], None]) -> None:
-    init_db(settings)
-    with get_session(settings) as session:
-        callback(session, AnalyticsEngine(session))
+    return refresh_seconds
 
 
 def _init_session_state(st: Any) -> None:
@@ -1145,11 +1253,13 @@ def render_dashboard() -> None:
     export_path = find_export_file(settings)
     if export_path and not database_available(settings):
         export_data = load_export_dashboard(export_path)
-        _render_export_dashboard(st, settings, export_data)
+        refresh_seconds = _render_export_dashboard(st, settings, export_data)
+        _apply_auto_refresh(st, refresh_seconds)
         return
 
     st.sidebar.title("Telegram Scraper")
     st.sidebar.caption("Local OSINT dashboard over stored SQLite data.")
+    refresh_seconds = _render_auto_refresh_sidebar(st)
     page = st.sidebar.radio("Navigate", PAGE_NAMES, label_visibility="collapsed")
 
     if not database_available(settings):
@@ -1175,6 +1285,7 @@ def render_dashboard() -> None:
         "Export": _page_export,
     }
     page_handlers[page](settings, filters)
+    _apply_auto_refresh(st, refresh_seconds)
 
 
 def _page_overview(settings: Settings, filters: DashboardFilters) -> None:

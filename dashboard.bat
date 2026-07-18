@@ -7,5 +7,9 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-".venv\Scripts\python.exe" -m streamlit run app.py --server.headless false
+REM Stop stale Streamlit processes still holding port 8501.
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8501 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+timeout /t 1 /nobreak >nul
+
+".venv\Scripts\python.exe" -m streamlit run app.py --server.port 8501 --server.headless false
 exit /b %ERRORLEVEL%

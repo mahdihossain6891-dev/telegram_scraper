@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DashboardApp } from "@/components/DashboardApp";
 import type { ExportPayload } from "@/lib/types";
@@ -14,24 +14,37 @@ type ApiResponse = {
 export default function HomePage() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState("");
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshSeconds, setRefreshSeconds] = useState(30);
+  const [lastFetchedAt, setLastFetchedAt] = useState("");
+
+  const loadData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/data", { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) {
+        setError(body.error || "Failed to load export data.");
+        return;
+      }
+      setError("");
+      setData(body as ApiResponse);
+      setLastFetchedAt(new Date().toLocaleString());
+    } catch {
+      setError("Could not load dashboard data.");
+    }
+  }, []);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const response = await fetch("/api/data");
-        const body = await response.json();
-        if (!response.ok) {
-          setError(body.error || "Failed to load export data.");
-          return;
-        }
-        setData(body as ApiResponse);
-      } catch {
-        setError("Could not load dashboard data.");
-      }
-    }
-
     loadData();
-  }, []);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (!autoRefresh) {
+      return;
+    }
+    const timer = window.setInterval(loadData, refreshSeconds * 1000);
+    return () => window.clearInterval(timer);
+  }, [autoRefresh, refreshSeconds, loadData]);
 
   if (error) {
     return (
@@ -55,5 +68,16 @@ export default function HomePage() {
     );
   }
 
-  return <DashboardApp source={data.source} payload={data.payload} />;
+  return (
+    <DashboardApp
+      source={data.source}
+      payload={data.payload}
+      autoRefresh={autoRefresh}
+      refreshSeconds={refreshSeconds}
+      lastFetchedAt={lastFetchedAt}
+      onAutoRefreshChange={setAutoRefresh}
+      onRefreshSecondsChange={setRefreshSeconds}
+      onManualRefresh={loadData}
+    />
+  );
 }

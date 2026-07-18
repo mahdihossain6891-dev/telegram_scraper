@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 
@@ -29,6 +29,12 @@ import type { DashboardFilters, ExportPayload } from "@/lib/types";
 type DashboardAppProps = {
   source: string;
   payload: ExportPayload;
+  autoRefresh?: boolean;
+  refreshSeconds?: number;
+  lastFetchedAt?: string;
+  onAutoRefreshChange?: (enabled: boolean) => void;
+  onRefreshSecondsChange?: (seconds: number) => void;
+  onManualRefresh?: () => void;
 };
 
 function Metric({ label, value, delta }: { label: string; value: string | number; delta?: string | number }) {
@@ -70,7 +76,16 @@ function DataTable({ rows }: { rows: Record<string, unknown>[] }) {
   );
 }
 
-export function DashboardApp({ source, payload }: DashboardAppProps) {
+export function DashboardApp({
+  source,
+  payload,
+  autoRefresh = false,
+  refreshSeconds = 30,
+  lastFetchedAt = "",
+  onAutoRefreshChange,
+  onRefreshSecondsChange,
+  onManualRefresh,
+}: DashboardAppProps) {
   const data = useMemo(() => buildExportDashboard(payload), [payload]);
   const allChatIds = useMemo(() => data.chatSummaries.map((row) => row.chat_id), [data.chatSummaries]);
   const [page, setPage] = useState<PageName>("Overview");
@@ -497,6 +512,32 @@ export function DashboardApp({ source, payload }: DashboardAppProps) {
           <h2>Telegram Scraper</h2>
           <p>Vercel · export.json mode</p>
           <span className="version-badge">Dashboard v2</span>
+        </div>
+        <div className="sidebar-section">
+          <h3>Live updates</h3>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(event) => onAutoRefreshChange?.(event.target.checked)}
+            />
+            Auto-refresh dashboard
+          </label>
+          <label>
+            Refresh interval (seconds)
+            <input
+              type="number"
+              min={15}
+              max={600}
+              step={15}
+              value={refreshSeconds}
+              onChange={(event) => onRefreshSecondsChange?.(Number(event.target.value))}
+            />
+          </label>
+          <button type="button" className="btn" onClick={() => onManualRefresh?.()}>
+            Refresh now
+          </button>
+          {lastFetchedAt ? <p className="sidebar-note">Last fetched: {lastFetchedAt}</p> : null}
         </div>
         <nav className="sidebar-nav">
           {PAGE_NAMES.map((name) => (
