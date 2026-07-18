@@ -37,12 +37,31 @@ type DashboardAppProps = {
   onManualRefresh?: () => void;
 };
 
-function Metric({ label, value, delta }: { label: string; value: string | number; delta?: string | number }) {
+function Metric({
+  label,
+  value,
+  delta,
+  tone = "primary",
+}: {
+  label: string;
+  value: string | number;
+  delta?: string | number;
+  tone?: "primary" | "accent" | "danger";
+}) {
   return (
-    <div className="metric-card">
+    <div className={`metric-card tone-${tone}`}>
       <div className="metric-label">{label}</div>
       <div className="metric-value">{value}</div>
       {delta !== undefined ? <div className="metric-delta">{delta}</div> : null}
+    </div>
+  );
+}
+
+function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="page-header">
+      <h1>{title}</h1>
+      {subtitle ? <p>{subtitle}</p> : null}
     </div>
   );
 }
@@ -186,18 +205,21 @@ export function DashboardApp({
   function renderOverview() {
     return (
       <>
-        <h1>Overview</h1>
+        <PageHeader
+          title="Overview"
+          subtitle="Flagged Telegram activity across monitored chats — dense ops view for keyword hits."
+        />
         <div className="metric-grid">
-          <Metric label="Flagged messages" value={filteredMessages.length} />
+          <Metric label="Flagged messages" value={filteredMessages.length} tone="accent" />
           <Metric label="Flagged chats" value={chatSummaries.length} />
           <Metric label="Keyword flags" value={termRows.reduce((sum, row) => sum + row.count, 0)} />
           <Metric label="Filtered chats" value={chatSummaries.length} />
         </div>
         <div className="metric-grid">
           <Metric label="Busiest chat" value={insights.busiestChat || "—"} />
-          <Metric label="Top keyword" value={insights.topKeyword || "—"} delta={insights.topKeywordCount} />
+          <Metric label="Top keyword" value={insights.topKeyword || "—"} delta={insights.topKeywordCount} tone="accent" />
           <Metric label="Top category" value={insights.topCategory || "—"} delta={insights.topCategoryCount} />
-          <Metric label="Multi-flag msgs" value={insights.multiFlagMessages} />
+          <Metric label="Multi-flag msgs" value={insights.multiFlagMessages} tone="danger" />
         </div>
         {insights.earliestMessage ? (
           <p className="caption">
@@ -271,7 +293,7 @@ export function DashboardApp({
   function renderChats() {
     return (
       <>
-        <h1>Chats</h1>
+        <PageHeader title="Chats" subtitle="Per-chat flagged volume and category mix." />
         <p className="caption">Detailed breakdown for every flagged chat in the export.</p>
         <section className="panel card">
           <DataTable rows={chatSummaries as unknown as Record<string, unknown>[]} />
@@ -296,7 +318,7 @@ export function DashboardApp({
   function renderMessages() {
     return (
       <>
-        <h1>Messages</h1>
+        <PageHeader title="Messages" subtitle="Keyword-flagged message feed with sort and limit controls." />
         <div className="controls-row">
           <label>
             Max messages
@@ -336,7 +358,7 @@ export function DashboardApp({
     const multiRows = multiCategoryMessages(filteredMessages, 50);
     return (
       <>
-        <h1>Keywords</h1>
+        <PageHeader title="Keywords" subtitle="Category breakdown and top matching terms." />
         <p className="caption">Keyword term frequency, category mix, and multi-category hits.</p>
         <div className="two-col">
           <section className="panel card">
@@ -372,7 +394,7 @@ export function DashboardApp({
     const hourly = messagesPerHour(filteredMessages);
     return (
       <>
-        <h1>Analytics</h1>
+        <PageHeader title="Analytics" subtitle="Timeline, hour-of-day, and chat-type distributions." />
         {timeline.length ? (
           <section className="panel card">
             <PlotChart data={[{ type: "scatter", mode: "lines+markers", x: timeline.map((row) => row.date), y: timeline.map((row) => row.messages) }]} layout={{ title: "Flagged Messages Over Time" }} />
@@ -408,7 +430,7 @@ export function DashboardApp({
   function renderEntities() {
     return (
       <>
-        <h1>Entities</h1>
+        <PageHeader title="Entities" subtitle="Extracted links, handles, and keyword entities." />
         <div className="controls-row">
           <label>
             Max entities
@@ -446,7 +468,7 @@ export function DashboardApp({
   function renderSearch() {
     return (
       <>
-        <h1>Search</h1>
+        <PageHeader title="Search" subtitle="Full-text scan across filtered flagged messages." />
         <div className="controls-row">
           <label>
             Search message text
@@ -474,7 +496,7 @@ export function DashboardApp({
   function renderExport() {
     return (
       <>
-        <h1>Export</h1>
+        <PageHeader title="Export" subtitle="Download the current export payload or filtered CSVs." />
         <p className="caption">Download the currently loaded export data from the browser.</p>
         <section className="panel card">
           <div className="button-row">
@@ -509,9 +531,12 @@ export function DashboardApp({
     <div className="dashboard-layout">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <h2>Telegram Scraper</h2>
-          <p>Vercel · export.json mode</p>
-          <span className="version-badge">Dashboard v2</span>
+          <div className="brand-mark">
+            <span className={autoRefresh ? "live-dot" : "live-dot paused"} aria-hidden="true" />
+            <h2>Telegram Scraper</h2>
+          </div>
+          <p>OSINT · keyword intelligence</p>
+          <span className="version-badge">Dashboard v3 · dense</span>
         </div>
         <div className="sidebar-section">
           <h3>Live updates</h3>
@@ -534,14 +559,20 @@ export function DashboardApp({
               onChange={(event) => onRefreshSecondsChange?.(Number(event.target.value))}
             />
           </label>
-          <button type="button" className="btn" onClick={() => onManualRefresh?.()}>
+          <button type="button" className="btn primary" onClick={() => onManualRefresh?.()}>
             Refresh now
           </button>
           {lastFetchedAt ? <p className="sidebar-note">Last fetched: {lastFetchedAt}</p> : null}
         </div>
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" aria-label="Dashboard pages">
           {PAGE_NAMES.map((name) => (
-            <button key={name} type="button" className={page === name ? "nav-btn active" : "nav-btn"} onClick={() => setPage(name)}>
+            <button
+              key={name}
+              type="button"
+              className={page === name ? "nav-btn active" : "nav-btn"}
+              onClick={() => setPage(name)}
+              aria-current={page === name ? "page" : undefined}
+            >
               {name}
             </button>
           ))}
@@ -633,15 +664,30 @@ export function DashboardApp({
       </aside>
       <main className="dashboard-main">
         {source === "sample" ? (
-          <div className="notice">
+          <div className="notice" role="status">
             Showing sample data. Export locally with <code>export.bat</code>, copy to{" "}
             <code>web/public/data/export.json</code>, then redeploy on Vercel.
           </div>
         ) : null}
-        <div className="hero compact">
-          <p>
-            Data source: <strong>{source}</strong> · exported {new Date(data.exportedAt).toLocaleString()}
-          </p>
+        <div className="status-bar" role="status">
+          <span className={autoRefresh ? "status-pill live" : "status-pill idle"}>
+            <span className={autoRefresh ? "live-dot" : "live-dot paused"} aria-hidden="true" />
+            {autoRefresh ? `LIVE · ${refreshSeconds}s` : "IDLE"}
+          </span>
+          <span>
+            Source: <strong>{source}</strong>
+          </span>
+          <span>
+            Exported: <strong>{new Date(data.exportedAt).toLocaleString()}</strong>
+          </span>
+          {lastFetchedAt ? (
+            <span>
+              Fetched: <strong>{lastFetchedAt}</strong>
+            </span>
+          ) : null}
+          <span>
+            Flagged: <strong>{filteredMessages.length}</strong>
+          </span>
         </div>
         {pages[page]()}
       </main>

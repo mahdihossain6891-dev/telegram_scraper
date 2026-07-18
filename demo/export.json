@@ -1,10 +1,10 @@
 {
-  "exported_at": "2026-07-18T13:16:16.081457+08:00",
+  "exported_at": "2026-07-18T14:08:37.609690+08:00",
   "counts": {
     "chats": 4,
     "users": 4,
-    "messages": 24,
-    "entities": 81
+    "messages": 28,
+    "entities": 90
   },
   "chats": [
     {
@@ -410,6 +410,62 @@
       "forward_from_message_id": null,
       "views": 1,
       "scraped_at": "2026-07-18T05:07:01"
+    },
+    {
+      "id": 25,
+      "message_id": 23,
+      "chat_id": -1003989512030,
+      "sender_id": -1003989512030,
+      "timestamp": "2026-07-18T05:19:01",
+      "text": "[TEST 13:18] Narcotics scan: meth and fentanyl batch mention.",
+      "media_type": null,
+      "reply_to_message_id": null,
+      "forward_from_chat_id": null,
+      "forward_from_message_id": null,
+      "views": 1,
+      "scraped_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 26,
+      "message_id": 22,
+      "chat_id": -1003989512030,
+      "sender_id": -1003989512030,
+      "timestamp": "2026-07-18T05:19:00",
+      "text": "[TEST 13:18] Trafficking watch: human trafficking route update demo.",
+      "media_type": null,
+      "reply_to_message_id": null,
+      "forward_from_chat_id": null,
+      "forward_from_message_id": null,
+      "views": 1,
+      "scraped_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 27,
+      "message_id": 21,
+      "chat_id": -1003989512030,
+      "sender_id": -1003989512030,
+      "timestamp": "2026-07-18T05:18:59",
+      "text": "[TEST 13:18] Firearms alert: ghost gun assembly kit inquiry.",
+      "media_type": null,
+      "reply_to_message_id": null,
+      "forward_from_chat_id": null,
+      "forward_from_message_id": null,
+      "views": 1,
+      "scraped_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 28,
+      "message_id": 20,
+      "chat_id": -1003989512030,
+      "sender_id": -1003989512030,
+      "timestamp": "2026-07-18T05:18:58",
+      "text": "[TEST 13:18] Live demo: cocaine pickup scheduled tonight.",
+      "media_type": null,
+      "reply_to_message_id": null,
+      "forward_from_chat_id": null,
+      "forward_from_message_id": null,
+      "views": 1,
+      "scraped_at": "2026-07-18T05:19:20"
     }
   ],
   "entities": [
@@ -1141,6 +1197,87 @@
       "start_offset": null,
       "end_offset": null,
       "created_at": "2026-07-18T05:07:01"
+    },
+    {
+      "id": 82,
+      "message_row_id": 25,
+      "entity_type": "narcotics",
+      "entity_value": "fentanyl",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 83,
+      "message_row_id": 25,
+      "entity_type": "narcotics",
+      "entity_value": "meth",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 84,
+      "message_row_id": 25,
+      "entity_type": "narcotics",
+      "entity_value": "narcotics",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 85,
+      "message_row_id": 26,
+      "entity_type": "human_trafficking",
+      "entity_value": "human trafficking",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 86,
+      "message_row_id": 26,
+      "entity_type": "human_trafficking",
+      "entity_value": "trafficking",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 87,
+      "message_row_id": 27,
+      "entity_type": "firearms",
+      "entity_value": "ghost gun",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 88,
+      "message_row_id": 27,
+      "entity_type": "firearms",
+      "entity_value": "gun",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 89,
+      "message_row_id": 27,
+      "entity_type": "firearms",
+      "entity_value": "firearms",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
+    },
+    {
+      "id": 90,
+      "message_row_id": 28,
+      "entity_type": "narcotics",
+      "entity_value": "cocaine",
+      "start_offset": null,
+      "end_offset": null,
+      "created_at": "2026-07-18T05:19:20"
     }
   ]
 }

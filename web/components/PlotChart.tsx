@@ -10,8 +10,9 @@ const darkLayout = {
   template: "plotly_dark" as const,
   paper_bgcolor: "rgba(0,0,0,0)",
   plot_bgcolor: "rgba(0,0,0,0)",
-  font: { color: "#e5eefb" },
-  margin: { t: 48, r: 16, b: 48, l: 48 },
+  font: { color: "#e5eefb", family: "Fira Sans, sans-serif", size: 12 },
+  margin: { t: 40, r: 12, b: 40, l: 44 },
+  colorway: ["#3B82F6", "#D97706", "#DC2626", "#16A34A", "#60A5FA", "#F59E0B"],
 };
 
 type SimpleLayout = {

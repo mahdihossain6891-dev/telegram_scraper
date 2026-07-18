@@ -1050,7 +1050,7 @@ def _render_export_dashboard(
     export_data: ExportDashboardData,
 ) -> int | None:
     st.sidebar.title("Telegram Scraper")
-    st.sidebar.caption("Streamlit Cloud · export.json mode")
+    st.sidebar.caption("OSINT · keyword intelligence · export mode")
     refresh_seconds = _render_auto_refresh_sidebar(st)
     page = st.sidebar.radio(
         "Navigate",
@@ -1238,8 +1238,8 @@ def render_dashboard() -> None:
 
     st.set_page_config(
         page_title="Telegram Intelligence Scraper",
-        page_icon="📊",
         layout="wide",
+        initial_sidebar_state="expanded",
     )
 
     settings = _load_settings_or_none()
@@ -1258,7 +1258,7 @@ def render_dashboard() -> None:
         return
 
     st.sidebar.title("Telegram Scraper")
-    st.sidebar.caption("Local OSINT dashboard over stored SQLite data.")
+    st.sidebar.caption("OSINT · keyword intelligence · dense ops view")
     refresh_seconds = _render_auto_refresh_sidebar(st)
     page = st.sidebar.radio("Navigate", PAGE_NAMES, label_visibility="collapsed")
 
