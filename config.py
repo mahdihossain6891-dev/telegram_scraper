@@ -37,14 +37,13 @@ class Settings:
 
     @property
     def database_path(self) -> Path:
-        """Absolute path to the SQLite database file, if using a file-based URL."""
-        if self.database_url.startswith("sqlite:///"):
-            relative = self.database_url.removeprefix("sqlite:///")
-            path = Path(relative)
-            if not path.is_absolute():
-                path = self.project_root / path
-            return path
-        raise ValueError(f"Cannot resolve database path from URL: {self.database_url}")
+        """Legacy path helper — MongoDB has no local file; return data_dir marker."""
+        return self.data_dir / "mongodb.url"
+
+    @property
+    def mongodb_uri(self) -> str:
+        """Return the MongoDB connection URI."""
+        return self.database_url
 
 
 def _require_env(key: str) -> str:
@@ -96,7 +95,10 @@ def load_settings() -> Settings:
     api_hash = _require_env("TELEGRAM_API_HASH")
     phone = _optional_env("TELEGRAM_PHONE")
     session_name = os.getenv("TELEGRAM_SESSION_NAME", "telegram_scraper").strip()
-    database_url = os.getenv("DATABASE_URL", "sqlite:///data/telegram_scraper.db").strip()
+    database_url = os.getenv(
+        "MONGODB_URI",
+        os.getenv("DATABASE_URL", "mongodb://127.0.0.1:27017/telegram_scraper"),
+    ).strip()
     log_level = os.getenv("LOG_LEVEL", "INFO").strip().upper()
     log_file = _resolve_path(
         os.getenv("LOG_FILE", "logs/app.log").strip(),
@@ -146,7 +148,10 @@ def load_minimal_settings() -> Settings:
         os.getenv("EXPORTS_DIR", "exports").strip(),
         PROJECT_ROOT,
     )
-    database_url = os.getenv("DATABASE_URL", "sqlite:///data/telegram_scraper.db").strip()
+    database_url = os.getenv(
+        "MONGODB_URI",
+        os.getenv("DATABASE_URL", "mongodb://127.0.0.1:27017/telegram_scraper"),
+    ).strip()
     session_name = os.getenv("TELEGRAM_SESSION_NAME", "telegram_scraper").strip()
 
     return Settings(
