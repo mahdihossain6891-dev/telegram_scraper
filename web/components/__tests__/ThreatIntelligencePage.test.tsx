@@ -106,6 +106,9 @@ vi.mock("@/services/tieService", () => ({
   fetchTieAiConfig: vi.fn(),
   fetchTieAiModels: vi.fn(),
   updateTieAiConfig: vi.fn(),
+  fetchTieProcessStatus: vi.fn(),
+  startTieProcess: vi.fn(),
+  stopTieProcess: vi.fn(),
 }));
 
 vi.mock("@/components/mode/TieEngineProvider", () => ({
@@ -114,7 +117,9 @@ vi.mock("@/components/mode/TieEngineProvider", () => ({
 
 import {
   fetchTieAiConfig,
+  fetchTieProcessStatus,
   loadTieSnapshot,
+  startTieProcess,
   updateTieAiConfig,
 } from "@/services/tieService";
 import { useTieEngine } from "@/components/mode/TieEngineProvider";
@@ -134,6 +139,20 @@ describe("ThreatIntelligencePage", () => {
       error: null,
       refresh: vi.fn(),
       setEnabled: vi.fn(),
+    });
+    vi.mocked(fetchTieProcessStatus).mockResolvedValue({
+      running: false,
+      healthy: false,
+      configured: true,
+      cwd: "C:\\Users\\mahdi\\threat translation engine",
+      url: "http://127.0.0.1:8000",
+    });
+    vi.mocked(startTieProcess).mockResolvedValue({
+      ok: true,
+      started: true,
+      running: true,
+      healthy: true,
+      configured: true,
     });
     vi.mocked(fetchTieAiConfig).mockResolvedValue({
       provider: "mock",
@@ -215,11 +234,12 @@ describe("ThreatIntelligencePage", () => {
     await waitFor(() => {
       expect(screen.getByText("Built-in Console analyser active")).toBeTruthy();
     });
-    expect(screen.getByLabelText("Enable Threat Intelligence Engine")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Start Engine" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Stop Engine" })).toBeTruthy();
     expect(loadTieSnapshot).not.toHaveBeenCalled();
   });
 
-  it("shows offline state with retry", async () => {
+  it("shows offline state with start engine and retry", async () => {
     vi.mocked(loadTieSnapshot).mockResolvedValue(
       baseSnap({
         offline: true,
@@ -238,6 +258,7 @@ describe("ThreatIntelligencePage", () => {
     await waitFor(() => {
       expect(screen.getByText("Threat Intelligence Engine Offline")).toBeTruthy();
     });
+    expect(screen.getAllByRole("button", { name: "Start Engine" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });
 

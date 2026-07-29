@@ -39,8 +39,10 @@ Telegram scrape (keyword-gated)
 |------|------|
 | `tie_ingest.py` | Ingest API — `POST /api/intelligence/reports` |
 | `tie_engine_mode.py` | Persist TIE on/off mode |
+| `tie_process.py` | Start / stop external TIE uvicorn process |
 | `web/app/api/tie/[...path]/route.ts` | Next.js proxy → TIE `/api/v1/tie/*` |
 | `web/app/api/tie-engine/route.ts` | Console toggle for TIE engine mode |
+| `web/app/api/tie-engine/process/` | Start / stop / status for TIE process |
 | `web/services/tieService.ts` | Frontend TIE client |
 | `web/components/ThreatIntelligencePage.tsx` | Ops UI |
 | `web/components/mode/TieEngineProvider.tsx` | Engine mode context |
@@ -57,6 +59,8 @@ TIE_INGEST_API_KEY=dev-tie-console-shared-key
 # Where Console proxies TIE ops calls
 TIE_API_URL=http://127.0.0.1:8000
 TIE_ENGINE_ENABLED=0
+# Folder containing app/main.py for Start Engine
+# TIE_ENGINE_CWD=C:\Users\mahdi\threat translation engine
 ```
 
 **Next.js `web/.env.local`:**
@@ -84,9 +88,16 @@ Authorization: Bearer <TIE_INGEST_API_KEY>
 
 1. Start Threat Console: `.\dashboard.bat`
 2. Open the **Threat Intelligence** page
-3. Enable the Threat Intelligence Engine toggle (when TIE is running)
-4. View health, pipeline, queue, and recent intelligence from the proxied TIE API
+3. Click **Start Engine** (or flip the TIE switch On) — Console launches the external TIE process and enables scrape forwarding
+4. Click **Stop Engine** (or flip Off) to kill the process
+5. View health, pipeline, queue, and recent intelligence from the proxied TIE API
+
+Default TIE project path auto-detected as `~/threat translation engine`. Override with:
+
+```env
+TIE_ENGINE_CWD=C:\Users\mahdi\threat translation engine
+```
 
 ## Without TIE
 
-Leave `TIE_ENGINE_ENABLED=0` (default). Scrapes stay in Console’s keyword + risk pipeline only.
+Leave the engine stopped (or `TIE_ENGINE_ENABLED=0`). Scrapes stay in Console’s keyword + risk pipeline only.

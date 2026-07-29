@@ -119,6 +119,56 @@ export async function updateTieAiConfig(input: {
   });
 }
 
+export type TieProcessStatus = {
+  ok?: boolean;
+  running: boolean;
+  managed?: boolean;
+  healthy: boolean;
+  configured?: boolean;
+  pid?: number | null;
+  port?: number;
+  url?: string;
+  cwd?: string | null;
+  started?: boolean;
+  stopped?: boolean;
+  detail?: string;
+  error?: string;
+  mode?: {
+    enabled?: boolean;
+    analyser?: string;
+    description?: string;
+    updated_at?: string | null;
+  };
+};
+
+async function processFetch(path: string, method: "GET" | "POST" = "GET"): Promise<TieProcessStatus> {
+  const res = await fetch(`/api/tie-engine/process${path}`, {
+    method,
+    cache: "no-store",
+  });
+  const body = (await res.json().catch(() => ({}))) as TieProcessStatus;
+  if (!res.ok) {
+    throw new Error(body.error || `TIE process request failed (${res.status})`);
+  }
+  return {
+    running: Boolean(body.running),
+    healthy: Boolean(body.healthy),
+    ...body,
+  };
+}
+
+export async function fetchTieProcessStatus(): Promise<TieProcessStatus> {
+  return processFetch("");
+}
+
+export async function startTieProcess(): Promise<TieProcessStatus> {
+  return processFetch("/start", "POST");
+}
+
+export async function stopTieProcess(): Promise<TieProcessStatus> {
+  return processFetch("/stop", "POST");
+}
+
 /**
  * Load a full ops snapshot. Viewer/analyst skip workers + queue (403 expected).
  * Partial failures do not throw unless every core call fails (offline).
@@ -197,6 +247,9 @@ export const tieService = {
   fetchTieAiConfig,
   fetchTieAiModels,
   updateTieAiConfig,
+  fetchTieProcessStatus,
+  startTieProcess,
+  stopTieProcess,
   loadTieSnapshot,
   TieOfflineError,
 };

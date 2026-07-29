@@ -14,8 +14,12 @@ import type { TieAiConfig, TieSnapshot } from "@/lib/tie-types";
 import {
   fetchTieAiConfig,
   fetchTieAiModels,
+  fetchTieProcessStatus,
   loadTieSnapshot,
+  startTieProcess,
+  stopTieProcess,
   updateTieAiConfig,
+  type TieProcessStatus,
 } from "@/services/tieService";
 
 const DEFAULT_REFRESH_SEC = 30;
@@ -79,9 +83,8 @@ export function ThreatIntelligencePage({
     enabled: tieEnabled,
     analyser,
     description: analyserDescription,
-    busy: tieModeBusy,
     error: tieModeError,
-    setEnabled: setTieEnabled,
+    refresh,
   } = useTieEngine();
 
   const [snapshot, setSnapshot] = useState<TieSnapshot | null>(null);
@@ -101,6 +104,22 @@ export function ThreatIntelligencePage({
   const [aiBusy, setAiBusy] = useState(false);
   const [aiNotice, setAiNotice] = useState("");
   const [aiError, setAiError] = useState("");
+  const [processStatus, setProcessStatus] = useState<TieProcessStatus | null>(null);
+  const [processBusy, setProcessBusy] = useState(false);
+  const [processError, setProcessError] = useState("");
+
+  const refreshProcess = useCallback(async () => {
+    try {
+      const status = await fetchTieProcessStatus();
+      setProcessStatus(status);
+      setProcessError("");
+      return status;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to read TIE process status";
+      setProcessError(msg);
+      return null;
+    }
+  }, []);
 
   const load = useCallback(async (manual = false) => {
     if (!tieEnabled) {
@@ -140,6 +159,14 @@ export function ThreatIntelligencePage({
     void load(false);
     void loadAiConfig();
   }, [role, load, loadAiConfig, tieEnabled]);
+
+  useEffect(() => {
+    void refreshProcess();
+    const id = window.setInterval(() => {
+      void refreshProcess();
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [refreshProcess]);
 
   useEffect(() => {
     if (!tieEnabled || !autoRefresh) return;
@@ -209,47 +236,95 @@ export function ThreatIntelligencePage({
     return relativeTime(lastSuccessLocal || snapshot?.lastSuccessAt);
   }, [tick, lastSuccessLocal, snapshot?.lastSuccessAt]);
 
-  async function onToggleTie(next: boolean) {
+  async function onStartEngine() {
+    setProcessBusy(true);
+    setProcessError("");
     try {
-      await setTieEnabled(next);
-      if (next) {
-        hasSnapshotRef.current = false;
-        void load(true);
-        void loadAiConfig();
-      } else {
-        setSnapshot(null);
-        setLoading(false);
+      const result = await startTieProcess();
+      setProcessStatus(result);
+      await refresh();
+      hasSnapshotRef.current = false;
+      void load(true);
+      void loadAiConfig();
+      // Poll until healthy so the offline panel clears after uvicorn boots.
+      for (let i = 0; i < 12; i += 1) {
+        await new Promise((r) => window.setTimeout(r, 750));
+        const status = await refreshProcess();
+        if (status?.healthy) {
+          void load(true);
+          break;
+        }
       }
-    } catch {
-      /* error surfaced via tieModeError */
+    } catch (err) {
+      setProcessError(err instanceof Error ? err.message : "Failed to start TIE");
+    } finally {
+      setProcessBusy(false);
     }
   }
 
-  const engineSwitch = (
+  async function onStopEngine() {
+    setProcessBusy(true);
+    setProcessError("");
+    try {
+      const result = await stopTieProcess();
+      setProcessStatus(result);
+      await refresh();
+      setSnapshot(null);
+      setLoading(false);
+    } catch (err) {
+      setProcessError(err instanceof Error ? err.message : "Failed to stop TIE");
+    } finally {
+      setProcessBusy(false);
+      void refreshProcess();
+    }
+  }
+
+  const processRunning = Boolean(processStatus?.running || processStatus?.healthy);
+  const processLabel = processBusy
+    ? processRunning
+      ? "Stopping…"
+      : "Starting…"
+    : processStatus?.healthy
+      ? "Engine running · scrapes forward to TIE"
+      : processRunning
+        ? "Engine starting…"
+        : "Engine stopped · Console built-in analyser";
+
+  const engineControls = (
     <div className="tie-engine-switch-wrap">
-      <label className="tie-engine-switch" title={analyserDescription}>
-        <input
-          type="checkbox"
-          role="switch"
-          aria-checked={tieEnabled}
-          aria-label="Enable Threat Intelligence Engine"
-          checked={tieEnabled}
-          disabled={tieModeBusy}
-          onChange={(e) => void onToggleTie(e.target.checked)}
-        />
-        <span className="tie-engine-switch-ui" aria-hidden="true" />
-        <span className="tie-engine-switch-copy">
-          <strong>{tieEnabled ? "TIE On" : "TIE Off"}</strong>
-          <span className="caption">
-            {tieEnabled
-              ? "Scrapes forward to TIE for processing"
-              : "Console built-in scrape analyser"}
-          </span>
-        </span>
-      </label>
-      {tieModeError ? (
+      <div className="tie-process-controls">
+        <button
+          type="button"
+          className="btn primary"
+          disabled={processBusy || processRunning}
+          onClick={() => void onStartEngine()}
+        >
+          {processBusy && !processRunning ? "Starting…" : "Start Engine"}
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={processBusy || !processRunning}
+          onClick={() => void onStopEngine()}
+        >
+          {processBusy && processRunning ? "Stopping…" : "Stop Engine"}
+        </button>
+      </div>
+      <p className="caption tie-process-status" title={analyserDescription}>
+        <strong>{processRunning || tieEnabled ? "TIE" : "Console"}</strong>
+        {" · "}
+        {processLabel}
+      </p>
+      {processError || tieModeError ? (
         <p className="caption tie-ai-err" role="alert">
-          {tieModeError}
+          {processError || tieModeError}
+        </p>
+      ) : null}
+      {processStatus?.cwd ? (
+        <p className="caption tie-process-path">TIE path: {processStatus.cwd}</p>
+      ) : processStatus && processStatus.configured === false ? (
+        <p className="caption tie-ai-err" role="status">
+          Set <code>TIE_ENGINE_CWD</code> to your threat translation engine folder.
         </p>
       ) : null}
     </div>
@@ -266,14 +341,15 @@ export function ThreatIntelligencePage({
               data.
             </p>
           </div>
-          {engineSwitch}
+          {engineControls}
         </div>
         <section className="panel card tie-engine-disabled" role="status">
           <h2>Built-in Console analyser active</h2>
           <p className="caption">
             Dashboard, Threat Monitoring, and Analytics continue from scraped Mongo data
-            (<code>keyword_filter</code> + <code>risk_scoring</code>). Turn TIE on to forward
-            scrapes to the Threat Intelligence Engine and view TIE ops metrics here.
+            (<code>keyword_filter</code> + <code>risk_scoring</code>). Click{" "}
+            <strong>Start Engine</strong> to launch TIE, forward scrapes, and view ops metrics
+            here.
           </p>
           <p className="caption">Current analyser: {analyser}</p>
         </section>
@@ -289,7 +365,7 @@ export function ThreatIntelligencePage({
             <h1>Threat Intelligence</h1>
             <p>Loading Threat Intelligence Engine status…</p>
           </div>
-          {engineSwitch}
+          {engineControls}
         </div>
       </div>
     );
@@ -303,7 +379,7 @@ export function ThreatIntelligencePage({
             <h1>Threat Intelligence</h1>
             <p>Operational window into the Threat Intelligence Engine.</p>
           </div>
-          {engineSwitch}
+          {engineControls}
         </div>
         <section className="panel card tie-offline" role="alert">
           <h2>Threat Intelligence Engine Offline</h2>
@@ -312,15 +388,26 @@ export function ThreatIntelligencePage({
             {lastSuccessLocal ? new Date(lastSuccessLocal).toLocaleString() : "never"}
           </p>
           <p className="caption">
-            Start TIE on port 8000 (default), then retry. Example:{" "}
-            <code>uvicorn app.main:app --host 127.0.0.1 --port 8000</code>
+            The engine is not responding on {processStatus?.url || "http://127.0.0.1:8000"}.
+            Use <strong>Start Engine</strong> to launch it from this dashboard (no Cursor
+            terminal required).
           </p>
           <p className="caption">
             Or turn TIE off above to keep using the Console built-in scrape analyser.
           </p>
-          <button type="button" className="btn primary" onClick={() => void load(true)}>
-            Retry
-          </button>
+          <div className="tie-offline-actions">
+            <button
+              type="button"
+              className="btn primary"
+              disabled={processBusy}
+              onClick={() => void onStartEngine()}
+            >
+              {processBusy ? "Starting…" : "Start Engine"}
+            </button>
+            <button type="button" className="btn" onClick={() => void load(true)}>
+              Retry
+            </button>
+          </div>
         </section>
       </div>
     );
@@ -336,7 +423,7 @@ export function ThreatIntelligencePage({
           </p>
         </div>
         <div className="tie-header-controls">
-          {engineSwitch}
+          {engineControls}
           <div className="tie-refresh-bar">
             <label className="check-row">
               <input

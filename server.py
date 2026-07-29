@@ -127,6 +127,40 @@ def api_tie_engine_set(body: TieEngineBody) -> JSONResponse:
     return JSONResponse(set_tie_engine_mode(body.enabled))
 
 
+@app.get("/api/tie-engine/process")
+def api_tie_engine_process_status() -> JSONResponse:
+    """Whether the external TIE uvicorn process is running / healthy."""
+    from tie_process import get_tie_process_status
+
+    return JSONResponse(get_tie_process_status())
+
+
+@app.post("/api/tie-engine/process/start")
+def api_tie_engine_process_start() -> JSONResponse:
+    """Launch the Threat Intelligence Engine and enable scrape forwarding."""
+    from tie_engine_mode import set_tie_engine_mode
+    from tie_process import start_tie_process
+
+    result = start_tie_process()
+    if result.get("ok"):
+        mode = set_tie_engine_mode(True)
+        result["mode"] = mode
+        return JSONResponse(result)
+    return JSONResponse(result, status_code=500 if result.get("configured") is False else 503)
+
+
+@app.post("/api/tie-engine/process/stop")
+def api_tie_engine_process_stop() -> JSONResponse:
+    """Stop the Threat Intelligence Engine process and disable forwarding."""
+    from tie_engine_mode import set_tie_engine_mode
+    from tie_process import stop_tie_process
+
+    result = stop_tie_process()
+    mode = set_tie_engine_mode(False)
+    result["mode"] = mode
+    return JSONResponse(result)
+
+
 @app.get("/api/investigations")
 def api_investigations() -> JSONResponse:
     """Investigation data from the active provider — live MongoDB or simulation."""
