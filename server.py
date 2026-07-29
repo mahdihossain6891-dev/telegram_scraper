@@ -46,14 +46,16 @@ app.add_middleware(
 # Isolated module routers — must load with the main app (not a stale uvicorn worker).
 from ai.api import build_ai_router  # noqa: E402
 from evaluation.api import build_evaluation_router  # noqa: E402
+from tie_ingest import build_tie_ingest_router  # noqa: E402
 
 app.include_router(build_ai_router())
 app.include_router(build_evaluation_router())
+app.include_router(build_tie_ingest_router())
 
 import logging as _log  # noqa: E402
 
 _log.getLogger("uvicorn.error").info(
-    "Loaded /api/ai, /api/evaluation routers"
+    "Loaded /api/ai, /api/evaluation, /api/intelligence routers"
 )
 
 
@@ -103,6 +105,26 @@ def api_mode_end() -> JSONResponse:
     """Destroy simulation session and return console to live data."""
     state = end_simulation_mode()
     return JSONResponse(state.to_dict())
+
+
+class TieEngineBody(BaseModel):
+    enabled: bool = Field(..., description="When true, scrapes forward to TIE; when false, Console built-in analyser only")
+
+
+@app.get("/api/tie-engine")
+def api_tie_engine_get() -> JSONResponse:
+    """TIE on/off mode for Threat Intelligence page."""
+    from tie_engine_mode import get_tie_engine_mode
+
+    return JSONResponse(get_tie_engine_mode())
+
+
+@app.put("/api/tie-engine")
+def api_tie_engine_set(body: TieEngineBody) -> JSONResponse:
+    """Enable or disable TIE processing after scrapes."""
+    from tie_engine_mode import set_tie_engine_mode
+
+    return JSONResponse(set_tie_engine_mode(body.enabled))
 
 
 @app.get("/api/investigations")

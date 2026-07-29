@@ -177,6 +177,13 @@ async def run_monitored_scrape_async(
             batch.total_processed,
             batch.total_flagged_stored,
         )
+        try:
+            from tie_engine_mode import forward_flagged_messages_to_tie
+
+            forward_result = forward_flagged_messages_to_tie(limit=200)
+            logger.info("tie_forward_result %s", forward_result)
+        except Exception:
+            logger.exception("tie_forward_after_scrape_failed")
     finally:
         await manager.stop(client)
 

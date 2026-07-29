@@ -9,6 +9,7 @@ export const CONSOLE_NAV_ICONS: Record<PageName, string> = {
   Sources: "⬡",
   Cases: "◎",
   Analytics: "▤",
+  ThreatIntelligence: "✧",
   ThreatSimulation: "⬡",
 };
 

@@ -14,6 +14,7 @@ import { useDataMode } from "@/components/mode/DataModeProvider";
 import { ScrapeControl } from "@/components/ScrapeControl";
 import { OpsPage } from "@/components/OpsPage";
 import { SourcesPage } from "@/components/SourcesPage";
+import { ThreatIntelligencePage } from "@/components/ThreatIntelligencePage";
 import { ThreatSimulationPage } from "@/components/ThreatSimulationPage";
 import { type PageName } from "@/lib/constants";
 import {
@@ -143,6 +144,9 @@ export function DashboardApp({
         filteredMessages={filteredMessages}
         filteredEntities={filteredEntities}
       />
+    ),
+    ThreatIntelligence: () => (
+      <ThreatIntelligencePage refreshSeconds={refreshSeconds} />
     ),
     Ops: () => (
       <OpsPage
