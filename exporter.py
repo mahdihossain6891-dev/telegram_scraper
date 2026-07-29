@@ -233,7 +233,7 @@ def build_export_payload(
     """Return the live export.json-shaped payload from MongoDB without writing files."""
     cfg = ensure_directories(settings)
     if database_name:
-        from database import get_db_by_name, get_session_for_database
+        from database import get_session_for_database
 
         with get_session_for_database(database_name, cfg) as session:
             payload = DataExporter(session).build_payload()
