@@ -35,6 +35,7 @@ export const PAGE_NAMES = [
   "Sources",
   "Analytics",
   "Ops",
+  "ThreatSimulation",
   "ThreatIntelligence",
 ] as const;
 
@@ -43,7 +44,7 @@ export type PageName = (typeof PAGE_NAMES)[number];
 export const NAV_GROUPS: Array<{ label: string; pages: PageName[] }> = [
   { label: "Monitor", pages: ["Command", "Intel", "Ops"] },
   { label: "Entities", pages: ["Sources", "Cases"] },
-  { label: "Analyze", pages: ["Analytics", "ThreatIntelligence"] },
+  { label: "Analyze", pages: ["Analytics", "ThreatIntelligence", "ThreatSimulation"] },
 ];
 
 /** SOC display labels — internal PageName keys stay unchanged. */
@@ -55,6 +56,7 @@ export const PAGE_LABELS: Record<PageName, string> = {
   Cases: "Users",
   Analytics: "Analytics",
   ThreatIntelligence: "Threat Intelligence",
+  ThreatSimulation: "Simulator",
 };
 
 export function pageLabel(name: PageName): string {

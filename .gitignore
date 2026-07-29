@@ -20,7 +20,7 @@ env/
 # Database
 data/*.db
 data/*.db-journal
-data/tie_engine_mode.json
+data/console_mode.json
 
 # Logs
 logs/*.log

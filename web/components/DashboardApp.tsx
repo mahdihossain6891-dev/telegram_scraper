@@ -9,10 +9,13 @@ import { IntelPage } from "@/components/IntelPage";
 import { AppNavbar } from "@/components/layout/AppNavbar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { parseDashboardPage } from "@/lib/console-nav";
+import { SimulationBanner } from "@/components/mode/SimulationBanner";
+import { useDataMode } from "@/components/mode/DataModeProvider";
 import { ScrapeControl } from "@/components/ScrapeControl";
 import { OpsPage } from "@/components/OpsPage";
 import { SourcesPage } from "@/components/SourcesPage";
 import { ThreatIntelligencePage } from "@/components/ThreatIntelligencePage";
+import { ThreatSimulationPage } from "@/components/ThreatSimulationPage";
 import { type PageName } from "@/lib/constants";
 import {
   buildExportDashboard,
@@ -48,6 +51,8 @@ export function DashboardApp({
   onRefreshSecondsChange,
   onManualRefresh,
 }: DashboardAppProps) {
+  const { mode, simulation } = useDataMode();
+  const isSim = mode === "simulation" && simulation.simulation_active;
   const data = useMemo(() => buildExportDashboard(payload), [payload]);
   const allChatIds = useMemo(
     () => data.chatSummaries.map((row) => row.chat_id),
@@ -59,9 +64,11 @@ export function DashboardApp({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // When live ↔ simulation swaps (or a new scrape lands), chat IDs change.
+  // Reset scope so pages aren't filtered to the previous dataset's empty set.
   useEffect(() => {
     setFilters(defaultFilters(allChatIds));
-  }, [source, chatIdsKey, allChatIds]);
+  }, [mode, simulation.simulation_active, simulation.session_id, source, chatIdsKey, allChatIds]);
 
   useEffect(() => {
     const next = parseDashboardPage(new URLSearchParams(window.location.search).get("page"));
@@ -148,6 +155,7 @@ export function DashboardApp({
         filteredEntities={filteredEntities}
       />
     ),
+    ThreatSimulation: () => <ThreatSimulationPage />,
   };
 
   return (
@@ -184,6 +192,8 @@ export function DashboardApp({
           riskPosture={`${highCritical} high+ · ${caseCount} cases`}
           onManualRefresh={onManualRefresh}
         />
+
+        {isSim ? <SimulationBanner /> : null}
 
         {page === "Command" ? (
           <ScrapeControl onScrapeComplete={() => onManualRefresh?.()} />

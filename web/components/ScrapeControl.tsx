@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useDataMode } from "@/components/mode/DataModeProvider";
+import {
+  SimulationSettingsPanel,
+  loadSimulationLimit,
+} from "@/components/simulation/SimulationSettingsPanel";
+import { loadSimulationModel } from "@/lib/simulation-model";
+import { loadSimulationScenarios, formatSimulationScenariosForApi } from "@/lib/simulation-settings";
+
 export type ScrapeJobStatus = {
   status: "idle" | "running" | "completed" | "failed";
   channels_total: number;
@@ -40,11 +48,19 @@ async function fetchScrapeStatus(): Promise<ScrapeJobStatus> {
   return (await res.json()) as ScrapeJobStatus;
 }
 
-async function startScrapeJob(): Promise<ScrapeJobStatus> {
+async function startScrapeJob(options?: {
+  model?: string;
+  scenario?: string;
+  limit?: number;
+}): Promise<ScrapeJobStatus> {
+  const payload: Record<string, string | number> = {};
+  if (options?.model) payload.model = options.model;
+  if (options?.scenario) payload.scenario = options.scenario;
+  if (options?.limit) payload.limit = options.limit;
   const res = await fetch("/api/scrape/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify(payload),
     cache: "no-store",
   });
   const body = await res.json().catch(() => ({}));
@@ -88,9 +104,12 @@ function statusLabel(status: ScrapeJobStatus["status"]): string {
 
 type Props = {
   onScrapeComplete?: () => void;
+  /** Override primary action label (simulation mode). */
+  generateLabel?: string;
 };
 
-export function ScrapeControl({ onScrapeComplete }: Props) {
+export function ScrapeControl({ onScrapeComplete, generateLabel }: Props) {
+  const { mode, simulation, refreshMode, setSimulationMode } = useDataMode();
   const [status, setStatus] = useState<ScrapeJobStatus>(IDLE_STATUS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -107,7 +126,7 @@ export function ScrapeControl({ onScrapeComplete }: Props) {
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+  }, [refresh, mode]);
 
   useEffect(() => {
     if (status.status !== "running") {
@@ -120,6 +139,7 @@ export function ScrapeControl({ onScrapeComplete }: Props) {
   }, [status.status, refresh]);
 
   const completedRef = useRef<string | null>(null);
+
   const completedAt = status.finished_at;
   useEffect(() => {
     if (
@@ -134,16 +154,51 @@ export function ScrapeControl({ onScrapeComplete }: Props) {
     }
   }, [status.status, completedAt, onScrapeComplete]);
 
+  async function ensureSimulationMode() {
+    const scenario = formatSimulationScenariosForApi(loadSimulationScenarios());
+    if (mode === "simulation" && simulation.simulation_active) {
+      // Re-assert on server so uvicorn reloads don't leave Generate on the live path.
+      await fetch("/api/mode", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "simulation",
+          scenario,
+          auto_start: false,
+          session_name: simulation.session_name || "Console simulation",
+        }),
+      });
+      await refreshMode();
+      return scenario;
+    }
+    await setSimulationMode({ scenario, sessionName: "Console simulation" });
+    return scenario;
+  }
+
   async function handleRun() {
     setBusy(true);
     setError("");
     try {
       const current = await refresh();
       if (current?.status === "running") {
-        setError("A scrape job is already running — wait for it to finish.");
+        setError("A generate job is already running — wait for it to finish.");
         return;
       }
-      const next = await startScrapeJob();
+
+      let scenario: string | undefined;
+      let limit: number | undefined;
+      let model: string | undefined;
+      if (mode === "simulation") {
+        scenario = await ensureSimulationMode();
+        limit = loadSimulationLimit();
+        model = loadSimulationModel() || undefined;
+      }
+
+      const next = await startScrapeJob(
+        mode === "simulation"
+          ? { model, scenario, limit }
+          : undefined,
+      );
       setStatus(next);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scrape failed to start");
@@ -162,6 +217,61 @@ export function ScrapeControl({ onScrapeComplete }: Props) {
         : status.status === "completed"
           ? "success"
           : "";
+  const simButtonLabel = generateLabel || "▶ Generate";
+
+  if (mode === "simulation") {
+    return (
+      <section className="scrape-control glass-card" aria-label="Simulation scrape controls">
+        <div className="scrape-control-head">
+          <div className="scrape-control-title">
+            <h2>Simulation Collection</h2>
+            <span className={`status-pill ${pillClass}`}>{statusLabel(status.status)}</span>
+          </div>
+          <button
+            type="button"
+            className="btn primary scrape-run-btn"
+            onClick={() => void handleRun()}
+            disabled={running}
+          >
+            {running ? "Generating…" : simButtonLabel}
+          </button>
+        </div>
+
+        {error ? <div className="error compact">{error}</div> : null}
+        {status.error ? <div className="error compact">{status.error}</div> : null}
+
+        <SimulationSettingsPanel compact showApplyScenario={false} disabled={running} />
+
+        <div className="scrape-metrics">
+          <div className="scrape-metric">
+            <span className="metric-label">Channels</span>
+            <strong>
+              {status.channels_scanned}
+              {status.channels_total ? ` / ${status.channels_total}` : ""}
+            </strong>
+          </div>
+          <div className="scrape-metric">
+            <span className="metric-label">Messages analyzed</span>
+            <strong>{status.messages_analyzed}</strong>
+          </div>
+          <div className="scrape-metric">
+            <span className="metric-label">Threats detected</span>
+            <strong className="threat-count">{status.threats_detected}</strong>
+          </div>
+          <div className="scrape-metric">
+            <span className="metric-label">Last run</span>
+            <strong className="caption mono">{formatTimestamp(status.last_run_at)}</strong>
+          </div>
+        </div>
+
+        <p className="caption scrape-note">
+          AI-generated OSINT training data is written to the isolated simulation database (
+          <code>telegram_scraper_simulation</code>). Turning off simulation clears this data.
+          Investigator Co-Pilot reads from the simulation database while simulation mode is active.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="scrape-control glass-card" aria-label="Scrape controls">

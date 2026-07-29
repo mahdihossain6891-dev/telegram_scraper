@@ -3,7 +3,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { SimulationSettingsPanel } from "@/components/simulation/SimulationSettingsPanel";
+import { useDataMode } from "@/components/mode/DataModeProvider";
 import { NAV_GROUPS, pageLabel, type PageName } from "@/lib/constants";
+import { formatSimulationScenarioLabels } from "@/lib/simulation-settings";
 import { KEYWORD_ENTITY_TYPES } from "@/lib/constants";
 import type { ChatSummaryRow, DashboardFilters } from "@/lib/types";
 
@@ -36,6 +39,7 @@ const NAV_ICONS: Record<PageName, string> = {
   Cases: "◎",
   Analytics: "▤",
   ThreatIntelligence: "✧",
+  ThreatSimulation: "⬡",
 };
 
 export function AppSidebar({
@@ -58,6 +62,9 @@ export function AppSidebar({
   onManualRefresh,
   onToggleChat,
 }: AppSidebarProps) {
+  const { mode, simulation } = useDataMode();
+  const isSim = mode === "simulation" && simulation.simulation_active;
+
   return (
     <aside className={`sidebar soc-sidebar${collapsed ? " collapsed" : ""}`} aria-label="Main navigation">
       <div className="sidebar-brand">
@@ -87,9 +94,13 @@ export function AppSidebar({
         <span className={`live-dot ${autoRefresh ? "" : "paused"}`} aria-hidden="true" />
         {!collapsed ? (
           <div>
-            <strong>{autoRefresh ? "Live" : "Paused"}</strong>
+            <strong>{isSim ? "Simulation" : autoRefresh ? "Live" : "Paused"}</strong>
             <div className="caption">
-              {lastFetchedAt ? `Updated ${lastFetchedAt}` : "—"}
+              {isSim && simulation.scenario
+                ? `Scenarios · ${formatSimulationScenarioLabels(simulation.scenario)}`
+                : lastFetchedAt
+                  ? `Updated ${lastFetchedAt}`
+                  : "—"}
             </div>
           </div>
         ) : null}
@@ -165,6 +176,7 @@ export function AppSidebar({
 
       {settingsOpen ? (
         <div className="sidebar-settings" role="region" aria-label="Scope and refresh">
+          {isSim ? <SimulationSettingsPanel /> : null}
           <ScopePanel
             filters={filters}
             setFilters={setFilters}

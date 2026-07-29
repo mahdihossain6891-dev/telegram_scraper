@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useDataMode } from "@/components/mode/DataModeProvider";
 import { buildAddressAlertCandidates } from "@/lib/alerts";
 import { downloadText, rowsToCsv } from "@/lib/csv";
 import type { EntityDisplayRow, ExportPayload, MessageDisplayRow } from "@/lib/types";
@@ -30,6 +31,8 @@ type OpsPageProps = {
 };
 
 export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPageProps) {
+  const { mode, simulation } = useDataMode();
+  const isSim = mode === "simulation" && simulation.simulation_active;
   const [status, setStatus] = useState<AlertStatus | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -64,7 +67,7 @@ export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPage
 
   useEffect(() => {
     loadStatus();
-  }, [loadStatus]);
+  }, [loadStatus, mode, simulation.simulation_active, simulation.session_id]);
 
   const sendAddressAlerts = useCallback(async () => {
     if (!addressCandidates.length) {
@@ -102,7 +105,9 @@ export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPage
       if (body.sent) {
         lastAutoKeyRef.current = signature;
         setNotice(
-          `Sent Telegram alert for ${addressCandidates.length} message(s) with detected addresses.`,
+          isSim
+            ? `Logged simulation alert for ${addressCandidates.length} message(s) with detected addresses.`
+            : `Sent Telegram alert for ${addressCandidates.length} message(s) with detected addresses.`,
         );
       } else if (
         body.detail === "No new address alerts to send" ||
@@ -146,7 +151,7 @@ export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPage
             : detail?.message || body?.message || "Test alert failed";
         throw new Error(message);
       }
-      setNotice("Test alert sent. Check Telegram.");
+      setNotice(isSim ? "Simulation test alert logged." : "Test alert sent. Check Telegram.");
       setStatus(body.status ?? status);
       await loadStatus();
     } catch (err) {
@@ -171,7 +176,7 @@ export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPage
           <div className="panel-head">
             <h2>Telegram alerts</h2>
             <span className={`status-pill ${status?.ready ? "live" : ""}`}>
-              {status?.ready ? "Ready" : "Not ready"}
+              {isSim ? "Simulation log" : status?.ready ? "Ready" : "Not ready"}
             </span>
           </div>
           <div className="metric-grid compact">
@@ -195,18 +200,26 @@ export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPage
               Enable with <code>TELEGRAM_ALERTS_ENABLED=1</code>.
             </li>
           </ol>
-          <p className="caption">{status?.hint}</p>
+          <p className="caption">
+            {isSim
+              ? "Simulation mode: alerts are logged locally and are not delivered to Telegram."
+              : status?.hint}
+          </p>
           {addressCandidates.length ? (
             <p className="caption">
               {addressCandidates.length} flagged message(s) include detected addresses
-              {status?.ready ? " — auto-alert runs when Telegram is ready." : "."}
+              {status?.ready
+                ? isSim
+                  ? " — auto-log runs in simulation mode."
+                  : " — auto-alert runs when Telegram is ready."
+                : "."}
             </p>
           ) : (
             <p className="caption">No phone, email, wallet, or street addresses in the current view.</p>
           )}
           <div className="button-row">
             <button type="button" className="btn primary" disabled={busy} onClick={sendTest}>
-              {busy ? "Sending…" : "Send test alert"}
+              {busy ? "Sending…" : isSim ? "Log test alert" : "Send test alert"}
             </button>
             <button
               type="button"
@@ -214,7 +227,7 @@ export function OpsPage({ payload, filteredMessages, filteredEntities }: OpsPage
               disabled={busy || !addressCandidates.length || !status?.ready}
               onClick={sendAddressAlerts}
             >
-              Send address alerts
+              {isSim ? "Log address alerts" : "Send address alerts"}
             </button>
             <button type="button" className="btn" onClick={loadStatus}>
               Refresh status
