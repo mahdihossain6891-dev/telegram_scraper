@@ -11,15 +11,19 @@ Modular Python + Next.js application for **authorized OSINT** over Telegram data
 
 ---
 
-## Table of Contents
+## 📚 Table of Contents
 
-- [📥 Presentation / slide deck](#-presentation--slide-deck)
-- [🔗 Project Links](#-project-links)
-- [⚡ Quick Run Instructions](#-quick-run-instructions)
+- [📥 Threat Console Slide Deck (Gamma)](docs/presentations/THREAT_CONSOLE_GAMMA.md)
+- [📊 Recruiter Slide Deck (Project Flow Walkthrough)](docs/presentations/RECRUITER_ONEPAGER.md)
+- [🛰️ Threat Intelligence Engine (TIE) Integration](docs/TIE_INTEGRATION.md)
+- [📈 Behavioral Analytics Module](docs/BEHAVIORAL_ANALYTICS.md)
+- [⚡ Quick Run Instructions (Run in 30 Seconds)](#-quick-run-instructions-run-in-30-seconds)
 - [🌟 Key Application Features](#-key-application-features)
+- [📄 Telegram Export JSON File Format Guide](docs/EXPORT_JSON.md)
+- [📥 How to Scrape Telegram with Telethon](#-how-to-scrape-telegram-with-telethon)
 - [🧠 How Sébastien AI & Vector Search Work](#-how-sébastien-ai--vector-search-work)
 - [📖 Architecture & Tech Stack](#-architecture--tech-stack)
-- [📡 Telegram Auth & Scraping Workflow](#-telegram-auth--scraping-workflow)
+- [🔗 Project Links](#-project-links)
 - [☁️ Deploy Dashboard on Vercel](#️-deploy-dashboard-on-vercel)
 - [⚙️ Configuration](#️-configuration)
 - [🧪 Testing](#-testing)
@@ -27,45 +31,7 @@ Modular Python + Next.js application for **authorized OSINT** over Telegram data
 
 ---
 
-## 📥 Presentation / slide deck
-
-| Resource | Path |
-|----------|------|
-| **Gamma / slide prompt** | [`docs/presentations/THREAT_CONSOLE_GAMMA.md`](docs/presentations/THREAT_CONSOLE_GAMMA.md) |
-| **Recruiter one-pager** | [`presentation-gamma.md`](presentation-gamma.md) |
-| **Gamma paste prompt** | [`docs/presentations/GAMMA_PROMPT.txt`](docs/presentations/GAMMA_PROMPT.txt) |
-
-Paste the Gamma markdown into [gamma.app](https://gamma.app) (**Create with AI**) to generate a walkthrough deck for demos or recruiters.
-
----
-
-## 🔗 Project Links
-
-| | URL |
-|--|-----|
-| **GitHub Repository** | https://github.com/mahdihossain6891-dev/telegram_scraper |
-| **Live Frontend (Vercel)** | _Deploy `web/` → set Root Directory to `web` — then replace this line with your `*.vercel.app` URL_ |
-| **API Swagger (local)** | http://127.0.0.1:8510/docs _(after `dashboard.bat`)_ |
-
-**Copy-paste blurb for mentors / submissions:**
-
-> I have completed the Threat Console (Telegram OSINT Intelligence Platform) project. Please find the details below:
->
-> **Project Links**
-> - **GitHub Repository:** https://github.com/mahdihossain6891-dev/telegram_scraper
-> - **Live Frontend:** _(your Vercel URL)_
-> - **API Swagger Documentation:** http://127.0.0.1:8510/docs (local) — or your hosted API `/docs`
->
-> **Quick Setup (local)**
-> ```bash
-> git clone https://github.com/mahdihossain6891-dev/telegram_scraper.git
-> cd telegram_scraper
-> # Windows: .\setup.bat && .\mongo.bat && fill .env && .\auth.bat && .\dashboard.bat
-> ```
-
----
-
-## ⚡ Quick Run Instructions
+## ⚡ Quick Run Instructions (Run in 30 Seconds)
 
 ### Prerequisites
 
@@ -237,14 +203,17 @@ telegram_scraper/
 ├── entity_extractor.py       # Regex entities
 ├── risk_scoring.py           # Deterministic risk
 ├── behavioral_analytics.py   # Behavior profiles
+├── tie_ingest.py             # TIE → Console report ingest
+├── tie_engine_mode.py        # TIE engine on/off
+├── maltego_export.py         # Maltego relationship export
 ├── docker-compose.yml        # MongoDB container
-├── docs/                     # ADRs, presentations, assets
+├── docs/                     # TIE, export, behavioral, presentations, assets
 └── tests/                    # pytest suite
 ```
 
 ---
 
-## 📡 Telegram Auth & Scraping Workflow
+## 📥 How to Scrape Telegram with Telethon
 
 1. Create an app at [my.telegram.org/apps](https://my.telegram.org/apps) → put `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` in `.env`
 2. `.\auth.bat` — saves session under `data/` (gitignored)
@@ -258,6 +227,45 @@ telegram_scraper/
 - **firearms** — e.g. ghost gun, weapons trafficking
 
 Prefer **channels/groups** over private chats for OSINT collection. Operate only on data you are authorized to access.
+
+**Export packs after scrape:**
+
+```powershell
+.\export.bat
+.\maltego_export.bat
+```
+
+See also: [Export JSON format](docs/EXPORT_JSON.md) · [TIE integration](docs/TIE_INTEGRATION.md)
+
+---
+
+## 🔗 Project Links
+
+| | URL |
+|--|-----|
+| **GitHub Repository** | https://github.com/mahdihossain6891-dev/telegram_scraper |
+| **Live Frontend (Vercel)** | _Deploy `web/` → set Root Directory to `web` — then replace this line with your `*.vercel.app` URL_ |
+| **API Swagger (local)** | http://127.0.0.1:8510/docs _(after `dashboard.bat`)_ |
+| **Threat Console deck** | [`docs/presentations/THREAT_CONSOLE_GAMMA.md`](docs/presentations/THREAT_CONSOLE_GAMMA.md) |
+| **TIE integration** | [`docs/TIE_INTEGRATION.md`](docs/TIE_INTEGRATION.md) |
+
+Paste Gamma markdown into [gamma.app](https://gamma.app) (**Create with AI**) to generate a PPT/slide walkthrough.
+
+**Copy-paste blurb for mentors / submissions:**
+
+> I have completed the Threat Console (Telegram OSINT Intelligence Platform) project. Please find the details below:
+>
+> **Project Links**
+> - **GitHub Repository:** https://github.com/mahdihossain6891-dev/telegram_scraper
+> - **Live Frontend:** _(your Vercel URL)_
+> - **API Swagger Documentation:** http://127.0.0.1:8510/docs (local) — or your hosted API `/docs`
+>
+> **Quick Setup (local)**
+> ```bash
+> git clone https://github.com/mahdihossain6891-dev/telegram_scraper.git
+> cd telegram_scraper
+> # Windows: .\setup.bat && .\mongo.bat && fill .env && .\auth.bat && .\dashboard.bat
+> ```
 
 ---
 
