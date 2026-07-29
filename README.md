@@ -6,7 +6,7 @@ Modular Python + Next.js application for **authorized OSINT** over Telegram data
 <!-- ![Threat Console](docs/assets/threat-console.png) -->
 
 <p align="center">
-  <em>Dashboard · Threat Monitoring · Alerts · Channels · Users · Analytics · Threat Intelligence · Simulator · Sébastien AI</em>
+  <em>Dashboard · Threat Monitoring · Alerts · Channels · Users · Analytics · Behavioral Analytics · Threat Intelligence · Simulator · Sébastien AI</em>
 </p>
 
 ---
@@ -119,13 +119,24 @@ Use a **channel or group index**, not a private chat. Allowed limits: `100`, `50
 - Behavioral analytics profiles
 
 ### Monitor (Threat Console)
-- **Dashboard** — command overview
-- **Threat Monitoring** — intel feed
-- **Alerts** — Telegram bot / channel notifications
-- **Channels** & **Users** — source and case views
-- **Analytics** — charts and trends
-- **Threat Intelligence** — TIE ingest / engine views
-- Live MongoDB via FastAPI, or static `export.json` on Vercel
+
+The Next.js UI at `http://localhost:3000` is the full SOC console. Toggle **Live** vs **Simulation** in the sidebar to switch between production MongoDB and the isolated simulation database.
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| **Dashboard** | `/` | Command overview, scrape controls, risk posture |
+| **Threat Monitoring** | `/?page=Intel` | Flagged message and entity intel feed |
+| **Alerts** | `/?page=Ops` | Telegram bot / channel alert delivery |
+| **Channels** | `/?page=Sources` | Source chat summaries and activity |
+| **Users** | `/?page=Cases` | Personnel / case rollups with risk scores |
+| **Analytics** | `/?page=Analytics` | Charts, trends, collection breakdown |
+| **Threat Intelligence** | `/?page=ThreatIntelligence` | TIE ingest, engine mode, intelligence reports |
+| **Simulator** | `/?page=ThreatSimulation` | Scenario lab, synthetic traffic, evaluation demos |
+| **Behavioral Analytics** | `/behavioral-analytics` | UEBA-style behavior profiles and scoring |
+| **Sébastien AI** | `/ai` | Evidence-grounded investigation copilot (RAG) |
+| **Settings** | `/settings` | Environment and console configuration |
+
+Data source: live MongoDB via FastAPI (`server.py`), simulation DB when simulation mode is active, or static `export.json` on Vercel (read-only).
 
 ### Investigate & train
 - **Sébastien** — evidence-grounded AI (RAG, investigate, reports) at `/ai`
@@ -205,7 +216,6 @@ telegram_scraper/
 ├── behavioral_analytics.py   # Behavior profiles
 ├── tie_ingest.py             # TIE → Console report ingest
 ├── tie_engine_mode.py        # TIE engine on/off
-├── maltego_export.py         # Maltego relationship export
 ├── docker-compose.yml        # MongoDB container
 ├── docs/                     # TIE, export, behavioral, presentations, assets
 └── tests/                    # pytest suite
@@ -232,7 +242,6 @@ Prefer **channels/groups** over private chats for OSINT collection. Operate only
 
 ```powershell
 .\export.bat
-.\maltego_export.bat
 ```
 
 See also: [Export JSON format](docs/EXPORT_JSON.md) · [TIE integration](docs/TIE_INTEGRATION.md)
