@@ -10,7 +10,6 @@ export const CONSOLE_NAV_ICONS: Record<PageName, string> = {
   Cases: "◎",
   Analytics: "▤",
   ThreatIntelligence: "✧",
-  ThreatSimulation: "⬡",
 };
 
 export function dashboardPageUrl(page: PageName): string {

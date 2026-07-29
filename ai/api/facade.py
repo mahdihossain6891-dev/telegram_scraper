@@ -31,14 +31,10 @@ DbFactory = Callable[[], Any]
 def _default_db_factory() -> Any:
     """Resolve a Mongo database handle inside the AI package boundary."""
     from config import load_settings
-    from data_providers.state import get_mode_state
-    from database import get_db, get_db_by_name, get_simulation_database_name, init_db
+    from database import get_db, init_db
 
     settings = load_settings()
     init_db(settings)
-    state = get_mode_state()
-    if state.mode == "simulation" and state.simulation_active:
-        return get_db_by_name(get_simulation_database_name(), settings)
     return get_db(settings)
 
 
@@ -475,14 +471,6 @@ class AIServiceFacade:
         """Return a cache key when the console can switch databases at runtime."""
         if self._db_factory is not None:
             return None
-        try:
-            from data_providers.state import get_mode_state
-
-            state = get_mode_state()
-            if state.mode == "simulation" and state.simulation_active:
-                return f"simulation:{state.session_id or 'active'}"
-        except Exception:
-            pass
         return "live"
 
     def _get_db(self) -> Any:

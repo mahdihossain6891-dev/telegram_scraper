@@ -2,7 +2,6 @@
 
 import type { AiHealth, Confidence } from "./types";
 import { AiModelPicker } from "./AiModelPicker";
-import { ModeToggle } from "@/components/mode/ModeToggle";
 import { confidenceClass, formatLatency } from "./utils";
 
 type Props = {
@@ -51,7 +50,6 @@ export function InvestigationHeader({
       </div>
       <div className="ai-header-controls">
         <AiModelPicker compact />
-        <ModeToggle />
       </div>
       <div className="ai-status-row" aria-label="Service status">
         <span className={`status-pill ai-status-chip system-status ${statusClass}`}>

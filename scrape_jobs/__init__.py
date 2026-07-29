@@ -7,7 +7,6 @@ from scrape_jobs.runner import (
     scrape_limit_from_env,
     start_scrape_job_in_background,
 )
-from scrape_jobs.simulation_runner import start_simulation_scrape_in_background
 from scrape_jobs.store import get_scrape_job_store, reset_scrape_job_store
 
 __all__ = [
@@ -18,5 +17,4 @@ __all__ = [
     "scrape_limit_from_env",
     "run_monitored_scrape_async",
     "start_scrape_job_in_background",
-    "start_simulation_scrape_in_background",
 ]

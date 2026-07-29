@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { EChart } from "@/components/EChart";
 import { ConsoleJumpNav } from "@/components/layout/ConsoleJumpNav";
-import { useDataMode } from "@/components/mode/DataModeProvider";
 import {
   distributionBarOption,
   heatmapOption,
@@ -108,8 +107,6 @@ function BriefTable({
 }
 
 export function BehavioralAnalyticsApp() {
-  const { mode, simulation } = useDataMode();
-  const isSim = mode === "simulation" && simulation.simulation_active;
   const [overview, setOverview] = useState<BehavioralOverview | null>(null);
   const [profiles, setProfiles] = useState<ProfileListRow[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -180,7 +177,7 @@ export function BehavioralAnalyticsApp() {
 
   useEffect(() => {
     void refreshAll();
-  }, [refreshAll, mode, simulation.simulation_active, simulation.session_id]);
+  }, [refreshAll]);
 
   const onRebuild = async () => {
     setRebuilding(true);
@@ -222,7 +219,6 @@ export function BehavioralAnalyticsApp() {
             <p>
               How users behave over time — frequency, hours, forwards, media, language, and
               expansion patterns. Not keyword content analysis.
-              {isSim ? " · Simulation data" : ""}
             </p>
             {selectedId ? (
               <button

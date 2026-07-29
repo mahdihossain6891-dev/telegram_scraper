@@ -1,1 +1,0 @@
-"""Simulation content generation helpers."""

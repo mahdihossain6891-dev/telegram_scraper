@@ -225,13 +225,6 @@ def get_db_by_name(database_name: str, settings: Settings | None = None) -> Mong
     return get_client(cfg)[database_name]
 
 
-def get_simulation_database_name() -> str:
-    """Isolated simulation database name (``telegram_scraper_simulation`` by default)."""
-    from simulator.config import load_simulation_settings
-
-    return load_simulation_settings().simulation_database_name
-
-
 def init_db_indexes(session: MongoSession) -> None:
     """Ensure indexes exist on the given session database."""
     session.messages.create_index(
@@ -312,11 +305,6 @@ def clear_database(database_name: str, settings: Settings | None = None) -> None
     with get_session_for_database(database_name, settings) as session:
         session.drop_all_data()
         session.behavioral_analytics.delete_many({})
-
-
-def clear_simulation_database(settings: Settings | None = None) -> None:
-    """Remove all simulation dummy data."""
-    clear_database(get_simulation_database_name(), settings)
 
 
 @contextmanager
