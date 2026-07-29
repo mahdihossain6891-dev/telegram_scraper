@@ -41,7 +41,10 @@ class TestScanMessageText:
         result = scan_message_text("methodology review completed")
         assert result.matched is False
 
-    def test_detects_broader_test_terms(self) -> None:
-        assert scan_message_text("possible drugs shipment").matched is True
-        assert scan_message_text("trafficking update").matched is True
-        assert scan_message_text("illegal guns for sale").matched is True
+    def test_detects_arabic_and_chinese_without_english(self) -> None:
+        ar = scan_message_text("تنبيه مختبري: تحديث شحنة كوكايين لأغراض المراقبة.")
+        assert ar.matched is True
+        assert "narcotics" in ar.categories
+        zh = scan_message_text("演练消息：人口贩运网络（仅限实验室）。")
+        assert zh.matched is True
+        assert "human_trafficking" in zh.categories

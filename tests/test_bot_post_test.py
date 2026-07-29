@@ -8,8 +8,11 @@ from unittest.mock import patch
 from bot_post_test import (
     BotPostConfig,
     DEFAULT_TEST_MESSAGES,
+    TEST_MESSAGES_BY_LANG,
     load_bot_post_config,
+    messages_for_langs,
     parse_args,
+    parse_lang_codes,
     post_test_messages,
     select_messages,
     send_channel_message,
@@ -24,6 +27,30 @@ def test_select_messages_default_first_message() -> None:
 def test_select_messages_all() -> None:
     args = parse_args(["--all"])
     assert select_messages(args) == DEFAULT_TEST_MESSAGES
+
+
+def test_select_messages_spanish_all() -> None:
+    args = parse_args(["--all", "--lang", "es"])
+    assert select_messages(args) == TEST_MESSAGES_BY_LANG["es"]
+
+
+def test_select_messages_mix_interleaves_languages() -> None:
+    args = parse_args(["--all", "--lang", "mix"])
+    messages = select_messages(args)
+    assert len(messages) > len(DEFAULT_TEST_MESSAGES)
+    assert any(m in TEST_MESSAGES_BY_LANG["es"] for m in messages)
+    assert any(m in TEST_MESSAGES_BY_LANG["ar"] for m in messages)
+    assert any(m in TEST_MESSAGES_BY_LANG["zh"] for m in messages)
+
+
+def test_parse_lang_codes() -> None:
+    assert parse_lang_codes("en,es") == ["en", "es"]
+    assert parse_lang_codes("mix")[0] == "en"
+    assert "bn" in parse_lang_codes("all")
+
+
+def test_messages_for_langs_single() -> None:
+    assert messages_for_langs(["fr"]) == TEST_MESSAGES_BY_LANG["fr"]
 
 
 def test_select_messages_custom() -> None:

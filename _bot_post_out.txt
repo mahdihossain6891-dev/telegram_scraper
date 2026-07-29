@@ -1,0 +1,201 @@
+﻿2026-07-23 21:27:47 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:47 | INFO     | telegram_scraper.bot_post_test | Posted message_id=91
+2026-07-23 21:27:47 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:48 | INFO     | telegram_scraper.bot_post_test | Posted message_id=92
+2026-07-23 21:27:48 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:49 | INFO     | telegram_scraper.bot_post_test | Posted message_id=93
+2026-07-23 21:27:49 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:50 | INFO     | telegram_scraper.bot_post_test | Posted message_id=94
+2026-07-23 21:27:50 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:50 | INFO     | telegram_scraper.bot_post_test | Posted message_id=95
+2026-07-23 21:27:50 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:54 | INFO     | telegram_scraper.bot_post_test | Posted message_id=96
+2026-07-23 21:27:54 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:55 | INFO     | telegram_scraper.bot_post_test | Posted message_id=97
+2026-07-23 21:27:55 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:56 | INFO     | telegram_scraper.bot_post_test | Posted message_id=98
+2026-07-23 21:27:56 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:57 | INFO     | telegram_scraper.bot_post_test | Posted message_id=99
+2026-07-23 21:27:57 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:27:57 | INFO     | telegram_scraper.bot_post_test | Posted message_id=100
+2026-07-23 21:27:57 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:01 | INFO     | telegram_scraper.bot_post_test | Posted message_id=101
+2026-07-23 21:28:01 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:02 | INFO     | telegram_scraper.bot_post_test | Posted message_id=102
+2026-07-23 21:28:02 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:03 | INFO     | telegram_scraper.bot_post_test | Posted message_id=103
+2026-07-23 21:28:03 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:03 | INFO     | telegram_scraper.bot_post_test | Posted message_id=104
+2026-07-23 21:28:03 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:04 | INFO     | telegram_scraper.bot_post_test | Posted message_id=105
+2026-07-23 21:28:04 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:08 | INFO     | telegram_scraper.bot_post_test | Posted message_id=106
+2026-07-23 21:28:08 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:09 | INFO     | telegram_scraper.bot_post_test | Posted message_id=107
+2026-07-23 21:28:09 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:10 | INFO     | telegram_scraper.bot_post_test | Posted message_id=108
+2026-07-23 21:28:10 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:10 | INFO     | telegram_scraper.bot_post_test | Posted message_id=109
+2026-07-23 21:28:10 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:11 | INFO     | telegram_scraper.bot_post_test | Posted message_id=110
+2026-07-23 21:28:11 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:12 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 35","parameters":{"retry_after":35}}
+2026-07-23 21:28:12 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:12 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 35","parameters":{"retry_after":35}}
+2026-07-23 21:28:12 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:13 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 34","parameters":{"retry_after":34}}
+2026-07-23 21:28:13 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:14 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 33","parameters":{"retry_after":33}}
+2026-07-23 21:28:14 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:15 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 33","parameters":{"retry_after":33}}
+2026-07-23 21:28:15 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:15 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 32","parameters":{"retry_after":32}}
+2026-07-23 21:28:15 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:16 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 31","parameters":{"retry_after":31}}
+2026-07-23 21:28:16 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:17 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 30","parameters":{"retry_after":30}}
+2026-07-23 21:28:17 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:17 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 30","parameters":{"retry_after":30}}
+2026-07-23 21:28:17 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:18 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 29","parameters":{"retry_after":29}}
+2026-07-23 21:28:18 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:19 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 28","parameters":{"retry_after":28}}
+2026-07-23 21:28:19 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:20 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 28","parameters":{"retry_after":28}}
+2026-07-23 21:28:20 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:20 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 27","parameters":{"retry_after":27}}
+2026-07-23 21:28:20 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:21 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 26","parameters":{"retry_after":26}}
+2026-07-23 21:28:21 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:22 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 25","parameters":{"retry_after":25}}
+2026-07-23 21:28:22 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:22 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 25","parameters":{"retry_after":25}}
+2026-07-23 21:28:22 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:23 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 24","parameters":{"retry_after":24}}
+2026-07-23 21:28:23 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:24 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 23","parameters":{"retry_after":23}}
+2026-07-23 21:28:24 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:24 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 23","parameters":{"retry_after":23}}
+2026-07-23 21:28:24 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:25 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 22","parameters":{"retry_after":22}}
+2026-07-23 21:28:25 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:26 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 21","parameters":{"retry_after":21}}
+2026-07-23 21:28:26 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:27 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 21","parameters":{"retry_after":21}}
+2026-07-23 21:28:27 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:27 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 20","parameters":{"retry_after":20}}
+2026-07-23 21:28:27 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:28 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 19","parameters":{"retry_after":19}}
+2026-07-23 21:28:28 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:29 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 19","parameters":{"retry_after":19}}
+2026-07-23 21:28:29 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:29 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 18","parameters":{"retry_after":18}}
+2026-07-23 21:28:29 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:30 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 17","parameters":{"retry_after":17}}
+2026-07-23 21:28:30 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:31 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 17","parameters":{"retry_after":17}}
+2026-07-23 21:28:31 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:32 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 16","parameters":{"retry_after":16}}
+2026-07-23 21:28:32 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:32 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 15","parameters":{"retry_after":15}}
+2026-07-23 21:28:32 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:33 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 14","parameters":{"retry_after":14}}
+2026-07-23 21:28:33 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:34 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 14","parameters":{"retry_after":14}}
+2026-07-23 21:28:34 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:34 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 13","parameters":{"retry_after":13}}
+2026-07-23 21:28:34 | INFO     | telegram_scraper.bot_post_test | Posting test message to @osint_test_lab
+2026-07-23 21:28:35 | ERROR    | telegram_scraper.bot_post_test | Failed to post message: {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 12","parameters":{"retry_after":12}}
+
+Target channel: @osint_test_lab
+Posted 20/54 message(s)
+  [OK] message_id=91 :: [TEST][ar] ╪¬┘å╪¿┘è┘ç ╪¬╪¼╪▒┘è╪¿┘è: ╪¬╪¡╪»┘è╪½ ╪┤╪¡┘å╪⌐ cocaine ┘ä┘ä┘ê╪¡╪⌐ ╪º┘ä┘à╪▒╪º┘é╪¿╪⌐.
+  [OK] message_id=92 :: [TEST][es] Alerta demo: actualizaci├│n de env├¡o de cocaine para el panel.
+  [OK] message_id=93 :: [TEST][fr] Alerte d├⌐mo : mise ├á jour dΓÇÖenvoi cocaine pour le tableau de bord.
+  [OK] message_id=94 :: [TEST][ru] ╨ö╨╡╨╝╨╛-╨╛╨┐╨╛╨▓╨╡╤ë╨╡╨╜╨╕╨╡: ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╡ ╨┐╨╛╤ü╤é╨░╨▓╨║╨╕ cocaine ╨┤╨╗╤Å ╨┐╨░╨╜╨╡╨╗╨╕.
+  [OK] message_id=95 :: [TEST][bn] αªíαºçαª«αºï αª╕αªñαª░αºìαªòαªñαª╛: αª¬αª░αºìαª»αª¼αºçαªòαºìαª╖αªú αªíαºìαª»αª╛αª╢αª¼αºïαª░αºìαªíαºçαª░ αª£αª¿αºìαª» cocaine αªÜαª╛αª▓αª╛αª¿ αªåαª¬αªíαºçαªƒαÑñ
+  [OK] message_id=96 :: [TEST][zh] µ╝öτñ║Φ¡ªµèÑ∩╝Üτ¢æµÄºΘ¥óµ¥┐τÜä cocaine Φ┤ºΦ┐Éµ¢┤µû░πÇé
+  [OK] message_id=97 :: [TEST][hi] αñíαÑçαñ«αÑï αñàαñ▓αñ░αÑìαñƒ: αñíαÑêαñ╢αñ¼αÑïαñ░αÑìαñí αñòαÑç αñ▓αñ┐αñÅ cocaine αñ╢αñ┐αñ¬αñ«αÑçαñéαñƒ αñàαñ¬αñíαÑçαñƒαÑñ
+  [OK] message_id=98 :: [TEST][pt] Alerta demo: atualiza├º├úo de remessa de cocaine para o painel.
+  [OK] message_id=99 :: [TEST][de] Demo-Alarm: cocaine-Lieferungsupdate f├╝r das Monitoring-Dashboard.
+  [OK] message_id=100 :: [TEST][ar] ┘à┘å╪┤┘ê╪▒ ╪¬╪¼╪▒┘è╪¿┘è ┘è╪░┘â╪▒ ghost gun ┘ä╪º┘â╪¬╪┤╪º┘ü ╪º┘ä╪ú╪│┘ä╪¡╪⌐ ╪º┘ä┘å╪º╪▒┘è╪⌐.
+  [OK] message_id=101 :: [TEST][es] Publicaci├│n de prueba con ghost gun para detecci├│n de armas.
+  [OK] message_id=102 :: [TEST][fr] Message test mentionnant ghost gun pour la d├⌐tection dΓÇÖarmes.
+  [OK] message_id=103 :: [TEST][ru] ╨ó╨╡╤ü╤é╨╛╨▓╤ï╨╣ ╨┐╨╛╤ü╤é ╤ü ╤â╨┐╨╛╨╝╨╕╨╜╨░╨╜╨╕╨╡╨╝ ghost gun ╨┤╨╗╤Å ╨┤╨╡╤é╨╡╨║╤å╨╕╨╕ ╨╛╤Ç╤â╨╢╨╕╤Å.
+  [OK] message_id=104 :: [TEST][bn] αª¬αª░αºÇαªòαºìαª╖αª╛ αª¬αºïαª╕αºìαªƒαºç ghost gun αªëαª▓αºìαª▓αºçαªû ΓÇö αªåαªùαºìαª¿αºçαª»αª╝αª╛αª╕αºìαªñαºìαª░ αª╢αª¼αºìαªª αª╕αª¿αª╛αªòαºìαªñαªòαª░αªúαÑñ
+  [OK] message_id=105 :: [TEST][zh] µ╡ïΦ»òσ╕ûµûçµÅÉσÅè ghost gun∩╝îτö¿Σ║Äµ₧¬µö»σà│Θö«Φ»ìµúÇµ╡ïπÇé
+  [OK] message_id=106 :: [TEST][hi] αñ¬αñ░αÑÇαñòαÑìαñ╖αñú αñ¬αÑïαñ╕αÑìαñƒ αñ«αÑçαñé ghost gun ΓÇö αñåαñùαÑìαñ¿αÑçαñ»αñ╛αñ╕αÑìαññαÑìαñ░ αñòαÑÇαñ╡αñ░αÑìαñí αñíαñ┐αñƒαÑçαñòαÑìαñ╢αñ¿αÑñ
+  [OK] message_id=107 :: [TEST][pt] Post de teste mencionando ghost gun para detec├º├úo de armas.
+  [OK] message_id=108 :: [TEST][de] Testbeitrag mit ghost gun zur Schusswaffen-Erkennung.
+  [OK] message_id=109 :: [TEST][ar] ╪▒╪│╪º┘ä╪⌐ ╪¬┘à╪▒┘è┘å ╪╣┘å human trafficking ring (╪╣╪▒╪╢ ┘ü┘é╪╖).
+  [OK] message_id=110 :: [TEST][es] Mensaje de ejercicio sobre human trafficking ring (solo demo).
+  [FAILED] [TEST][fr] Exercice sur human trafficking ring (d├⌐mo uniquement).
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 35","parameters":{"retry_after":35}}
+  [FAILED] [TEST][ru] ╨ú╤ç╨╡╨▒╨╜╨╛╨╡ ╤ü╨╛╨╛╨▒╤ë╨╡╨╜╨╕╨╡ ╨╛ human trafficking ring (╤é╨╛╨╗╤î╨║╨╛ ╨┤╨╡╨╝╨╛).
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 35","parameters":{"retry_after":35}}
+  [FAILED] [TEST][bn] αªàαª¿αºüαª╢αºÇαª▓αª¿ αª¼αª╛αª░αºìαªñαª╛: human trafficking ring (αª╢αºüαªºαºü αªíαºçαª«αºï)αÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 34","parameters":{"retry_after":34}}
+  [FAILED] [TEST][zh] µ╝öτ╗âµ╢êµü»∩╝Ühuman trafficking ring∩╝êΣ╗àµ╝öτñ║∩╝ëπÇé
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 33","parameters":{"retry_after":33}}
+  [FAILED] [TEST][hi] αñàαñ¡αÑìαñ»αñ╛αñ╕ αñ╕αñéαñªαÑçαñ╢: human trafficking ring (αñòαÑçαñ╡αñ▓ αñíαÑçαñ«αÑï)αÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 33","parameters":{"retry_after":33}}
+  [FAILED] [TEST][pt] Mensagem de exerc├¡cio sobre human trafficking ring (s├│ demo).
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 32","parameters":{"retry_after":32}}
+  [FAILED] [TEST][de] ├£bungsnachricht ├╝ber human trafficking ring (nur Demo).
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 31","parameters":{"retry_after":31}}
+  [FAILED] [TEST][ar] ┘ü╪¡╪╡ ╪º┘ä┘â┘ä┘à╪º╪¬: ╪¡╪»┘è╪½ meth ΓÇö ┘ä┘è╪│╪¬ ┘à╪╣┘ä┘ê┘à╪º╪¬ ╪º╪│╪¬╪«╪¿╪º╪▒╪º╪¬┘è╪⌐ ╪¡┘é┘è┘é┘è╪⌐.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 30","parameters":{"retry_after":30}}
+  [FAILED] [TEST][es] Control: conversaci├│n de meth ΓÇö no es inteligencia real.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 30","parameters":{"retry_after":30}}
+  [FAILED] [TEST][fr] Contr├┤le mot-cl├⌐ : discussion meth ΓÇö pas de renseignement r├⌐el.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 29","parameters":{"retry_after":29}}
+  [FAILED] [TEST][ru] ╨ƒ╤Ç╨╛╨▓╨╡╤Ç╨║╨░: ╤Ç╨░╨╖╨│╨╛╨▓╨╛╤Ç ╨╛ meth ΓÇö ╨╜╨╡ ╤Ç╨╡╨░╨╗╤î╨╜╨░╤Å ╤Ç╨░╨╖╨▓╨╡╨┤╨║╨░.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 28","parameters":{"retry_after":28}}
+  [FAILED] [TEST][bn] αªòαºÇαªôαª»αª╝αª╛αª░αºìαªí αªÜαºçαªò: meth αª¼αª┐αªñαª░αªú αªåαª▓αºïαªÜαª¿αª╛ ΓÇö αªåαª╕αª▓ αªùαºïαª»αª╝αºçαª¿αºìαªªαª╛ αª¿αª»αª╝αÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 28","parameters":{"retry_after":28}}
+  [FAILED] [TEST][zh] σà│Θö«Φ»ìµúÇµƒÑ∩╝Ümeth σêåΘöÇΦ«¿Φ«║ ΓÇö Θ¥₧τ£ƒσ«₧µâàµèÑπÇé
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 27","parameters":{"retry_after":27}}
+  [FAILED] [TEST][hi] αñòαÑÇαñ╡αñ░αÑìαñí αñ£αñ╛αñüαñÜ: meth αñ╡αñ┐αññαñ░αñú αñÜαñ░αÑìαñÜαñ╛ ΓÇö αñàαñ╕αñ▓αÑÇ αñçαñéαñƒαÑçαñ▓ αñ¿αñ╣αÑÇαñéαÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 26","parameters":{"retry_after":26}}
+  [FAILED] [TEST][pt] Checagem: conversa de meth ΓÇö n├úo ├⌐ intelig├¬ncia real.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 25","parameters":{"retry_after":25}}
+  [FAILED] [TEST][de] Keyword-Check: meth-Verteilungsgespr├ñch ΓÇö keine echte Intel.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 25","parameters":{"retry_after":25}}
+  [FAILED] [TEST][ar] ╪º╪«╪¬╪¿╪º╪▒ firearms: ╪░┘â╪▒ illegal gun sale ┘ä┘à╪«╪¬╪¿╪▒ ╪º┘ä┘â╪º╪┤╪╖.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 24","parameters":{"retry_after":24}}
+  [FAILED] [TEST][es] Prueba firearms: menci├│n de illegal gun sale para el laboratorio.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 23","parameters":{"retry_after":23}}
+  [FAILED] [TEST][fr] Test firearms : mention illegal gun sale pour le labo scraper.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 23","parameters":{"retry_after":23}}
+  [FAILED] [TEST][ru] ╨ó╨╡╤ü╤é firearms: ╤â╨┐╨╛╨╝╨╕╨╜╨░╨╜╨╕╨╡ illegal gun sale ╨┤╨╗╤Å ╨╗╨░╨▒╨╛╤Ç╨░╤é╨╛╤Ç╨╕╨╕.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 22","parameters":{"retry_after":22}}
+  [FAILED] [TEST][bn] Firearms αª½αºìαª▓αºìαª»αª╛αªù: illegal gun sale αªëαª▓αºìαª▓αºçαªû αª╕αºìαªòαºìαª░αºìαª»αª╛αª¬αª╛αª░ αª▓αºìαª»αª╛αª¼αºçαª░ αª£αª¿αºìαª»αÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 21","parameters":{"retry_after":21}}
+  [FAILED] [TEST][zh] Firearms µáçΦ«░µ╡ïΦ»ò∩╝Üillegal gun sale∩╝îΣ╛¢τê¼ΦÖ½σ«₧Θ¬îσ«ñΣ╜┐τö¿πÇé
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 21","parameters":{"retry_after":21}}
+  [FAILED] [TEST][hi] Firearms αñ½αÑìαñ▓αÑêαñù: illegal gun sale αñëαñ▓αÑìαñ▓αÑçαñû αñ╕αÑìαñòαÑìαñ░αÑçαñ¬αñ░ αñ▓αÑêαñ¼ αñòαÑç αñ▓αñ┐αñÅαÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 20","parameters":{"retry_after":20}}
+  [FAILED] [TEST][pt] Teste firearms: men├º├úo a illegal gun sale para o laborat├│rio.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 19","parameters":{"retry_after":19}}
+  [FAILED] [TEST][de] Firearms-Flag: illegal gun sale f├╝r das Scraper-Labor.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 19","parameters":{"retry_after":19}}
+  [FAILED] [TEST][ar] ╪º╪«╪¬╪¿╪º╪▒ narcotics: ╪╣╪¿╪º╪▒╪⌐ fentanyl shipment ┘ä┘ü╪¡╪╡ ┘ä┘ê╪¡╪⌐ ╪º┘ä╪¬╪¡┘â┘à.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 18","parameters":{"retry_after":18}}
+  [FAILED] [TEST][es] Prueba narcotics: frase de fentanyl shipment para QA del panel.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 17","parameters":{"retry_after":17}}
+  [FAILED] [TEST][fr] Test narcotics : phrase fentanyl shipment pour QA du dashboard.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 17","parameters":{"retry_after":17}}
+  [FAILED] [TEST][ru] ╨ó╨╡╤ü╤é narcotics: ╤ä╤Ç╨░╨╖╨░ fentanyl shipment ╨┤╨╗╤Å QA ╨┤╨░╤ê╨▒╨╛╤Ç╨┤╨░.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 16","parameters":{"retry_after":16}}
+  [FAILED] [TEST][bn] Narcotics αª½αºìαª▓αºìαª»αª╛αªù: fentanyl shipment αª¼αª╛αªòαºìαª» αªíαºìαª»αª╛αª╢αª¼αºïαª░αºìαªí QA-αªÅαª░ αª£αª¿αºìαª»αÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 15","parameters":{"retry_after":15}}
+  [FAILED] [TEST][zh] Narcotics µáçΦ«░µ╡ïΦ»ò∩╝Üfentanyl shipment∩╝îΣ╛¢Σ╗¬Φí¿µ¥┐ QAπÇé
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 14","parameters":{"retry_after":14}}
+  [FAILED] [TEST][hi] Narcotics αñ½αÑìαñ▓αÑêαñù: fentanyl shipment αñ╡αñ╛αñòαÑìαñ»αñ╛αñéαñ╢ αñíαÑêαñ╢αñ¼αÑïαñ░αÑìαñí QA αñòαÑç αñ▓αñ┐αñÅαÑñ
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 14","parameters":{"retry_after":14}}
+  [FAILED] [TEST][pt] Teste narcotics: frase fentanyl shipment para QA do dashboard.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 13","parameters":{"retry_after":13}}
+  [FAILED] [TEST][de] Narcotics-Flag: fentanyl shipment-Phrase f├╝r Dashboard-QA.
+         {"ok":false,"error_code":429,"description":"Too Many Requests: retry after 12","parameters":{"retry_after":12}}
+
+If posting failed, confirm the bot is an admin in the channel with permission to post messages.

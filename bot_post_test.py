@@ -16,15 +16,107 @@ from utils import get_logger, setup_logging
 
 logger = get_logger("bot_post_test")
 
-# Clearly fake OSINT lab messages for keyword-filter testing only.
-DEFAULT_TEST_MESSAGES: tuple[str, ...] = (
-    "[TEST] Demo alert: cocaine shipment update for monitoring dashboard.",
-    "[TEST] Sample post mentioning ghost gun for firearms keyword detection.",
-    "[TEST] Exercise message about human trafficking ring (demo only).",
-    "[TEST] Keyword check: meth distribution chatter — not real intelligence.",
-    "[TEST] Firearms flag test: illegal gun sale mention for scraper lab.",
-    "[TEST] Narcotics flag test: fentanyl shipment phrase for dashboard QA.",
+# Language codes supported for demo posts.
+SUPPORTED_LANGS: tuple[str, ...] = (
+    "en",
+    "es",
+    "fr",
+    "ar",
+    "ru",
+    "bn",
+    "zh",
+    "hi",
+    "pt",
+    "de",
 )
+
+# Lab-only demo chatter. Non-English sets must contain ZERO English vocabulary
+# (no TEST/QA/dashboard/cocaine/etc). Native terms must match keyword_filter.
+TEST_MESSAGES_BY_LANG: dict[str, tuple[str, ...]] = {
+    "en": (
+        "[TEST] Demo alert: cocaine shipment update for monitoring dashboard.",
+        "[TEST] Sample post mentioning ghost gun for firearms keyword detection.",
+        "[TEST] Exercise message about human trafficking ring (demo only).",
+        "[TEST] Keyword check: meth distribution chatter — not real intelligence.",
+        "[TEST] Firearms flag test: illegal gun sale mention for scraper lab.",
+        "[TEST] Narcotics flag test: fentanyl shipment phrase for dashboard QA.",
+    ),
+    "es": (
+        "Alerta de laboratorio: actualización de envío de cocaína para el monitoreo.",
+        "Publicación de prueba que menciona un arma ilegal para detección de armas.",
+        "Mensaje de ejercicio sobre una red de trata de personas (solo laboratorio).",
+        "Revisión: conversación sobre metanfetamina — no es inteligencia real.",
+        "Prueba de armas: mención de tráfico de armas para el laboratorio.",
+        "Prueba de estupefacientes: frase de envío de fentanilo para control de calidad.",
+    ),
+    "fr": (
+        "Alerte de laboratoire : mise à jour d’envoi de cocaïne pour la surveillance.",
+        "Message d’essai mentionnant une arme illégale pour la détection d’armes.",
+        "Exercice sur la traite des êtres humains (laboratoire uniquement).",
+        "Contrôle : discussion sur la méthamphétamine — pas de renseignement réel.",
+        "Essai armes : mention de trafic d’armes pour le laboratoire.",
+        "Essai stupéfiants : nouvelle cargaison d’héroïne pour le contrôle qualité.",
+    ),
+    "ar": (
+        "تنبيه مختبري: تحديث شحنة كوكايين لأغراض المراقبة.",
+        "منشور تجريبي يذكر سلاح غير قانوني لاكتشاف الأسلحة.",
+        "رسالة تمرين عن شبكة الاتجار بالبشر (للمختبر فقط).",
+        "فحص: حديث عن ميثامفيتامين — ليست معلومات استخباراتية حقيقية.",
+        "اختبار أسلحة: ذكر اتجار بالأسلحة لمختبر المراقبة.",
+        "اختبار مخدرات: عبارة شحنة فنتانيل لفحص الجودة.",
+    ),
+    "ru": (
+        "Лабораторное оповещение: обновление поставки кокаина для мониторинга.",
+        "Тестовый пост с упоминанием нелегальное оружие для детекции.",
+        "Учебное сообщение о торговля людьми (только лаборатория).",
+        "Проверка: разговор о метамфетамине — не реальная разведка.",
+        "Тест оружия: упоминание торговля оружием для лаборатории.",
+        "Тест наркотиков: фраза о поставке фентанила для контроля качества.",
+    ),
+    "bn": (
+        "ল্যাব সতর্কতা: নজরদারির জন্য কোকেইন চালানের হালনাগাদ।",
+        "পরীক্ষা পোস্টে অবৈধ অস্ত্রের উল্লেখ — অস্ত্র সনাক্তকরণের জন্য।",
+        "অনুশীলন বার্তা: মানব পাচার চক্র (শুধু ল্যাব)।",
+        "পরীক্ষা: মাদক পাচার নিয়ে আলোচনা — আসল গোয়েন্দা নয়।",
+        "অস্ত্র পরীক্ষা: অস্ত্র পাচারের উল্লেখ ল্যাবের জন্য।",
+        "মাদক পরীক্ষা: ফেন্টানিল চালানের বাক্য মান নিয়ন্ত্রণের জন্য।",
+    ),
+    "zh": (
+        "实验室警报：用于监控的可卡因货运更新。",
+        "测试帖文提及非法枪支，用于武器检测。",
+        "演练消息：人口贩运网络（仅限实验室）。",
+        "检查：冰毒分销讨论——非真实情报。",
+        "武器测试：提及武器走私，供实验室使用。",
+        "毒品测试：芬太尼货运用语，供质量检查。",
+    ),
+    "hi": (
+        "प्रयोगशाला चेतावनी: निगरानी के लिए कोकीन खेप का अद्यतन।",
+        "परीक्षण पोस्ट में अवैध हथियार का उल्लेख — हथियार पहचान के लिए।",
+        "अभ्यास संदेश: मानव तस्करी नेटवर्क (केवल प्रयोगशाला)।",
+        "जाँच: नशे का व्यापार चर्चा — असली खुफिया नहीं।",
+        "हथियार परीक्षण: हथियार तस्करी का उल्लेख प्रयोगशाला के लिए।",
+        "नशा परीक्षण: फेंटानिल खेप वाक्यांश गुणवत्ता नियंत्रण के लिए।",
+    ),
+    "pt": (
+        "Alerta de laboratório: atualização de remessa de cocaína para monitoramento.",
+        "Post de teste mencionando arma ilegal para detecção de armas.",
+        "Mensagem de exercício sobre rede de tráfico de pessoas (somente laboratório).",
+        "Verificação: conversa sobre metanfetamina — não é inteligência real.",
+        "Teste de armas: menção a tráfico de armas para o laboratório.",
+        "Teste de entorpecentes: frase de remessa de fentanil para controle de qualidade.",
+    ),
+    "de": (
+        "Laboralarm: Kokain-Lieferungsupdate für die Überwachung.",
+        "Testbeitrag mit Erwähnung einer illegale Waffe zur Waffenerkennung.",
+        "Übungsnachricht über Menschenhandel (nur Labor).",
+        "Prüfung: Gespräch über Methamphetamin — keine echte Aufklärung.",
+        "Waffentest: Erwähnung von Waffenhandel für das Labor.",
+        "Betäubungsmitteltest: frischer Drogenhandel für die Qualitätskontrolle.",
+    ),
+}
+
+# Backward-compatible default = English set.
+DEFAULT_TEST_MESSAGES: tuple[str, ...] = TEST_MESSAGES_BY_LANG["en"]
 
 
 @dataclass(frozen=True)
@@ -126,20 +218,72 @@ def post_test_messages(
     return results
 
 
+def parse_lang_codes(raw: str | None) -> list[str]:
+    """Parse comma-separated language codes; ``mix`` / ``all`` expands to every language."""
+    if not raw or not str(raw).strip():
+        return ["en"]
+    parts = [p.strip().lower() for p in str(raw).split(",") if p.strip()]
+    if not parts:
+        return ["en"]
+    if any(p in {"mix", "all", "*"} for p in parts):
+        return list(SUPPORTED_LANGS)
+    unknown = [p for p in parts if p not in TEST_MESSAGES_BY_LANG]
+    if unknown:
+        raise BotPostError(
+            f"Unknown language code(s): {', '.join(unknown)}. "
+            f"Use: {', '.join(SUPPORTED_LANGS)}, or mix"
+        )
+    # Preserve order, unique
+    seen: set[str] = set()
+    out: list[str] = []
+    for code in parts:
+        if code not in seen:
+            seen.add(code)
+            out.append(code)
+    return out
+
+
+def messages_for_langs(langs: list[str]) -> tuple[str, ...]:
+    """Flatten demo messages for the selected languages (interleaved by index)."""
+    pools = [TEST_MESSAGES_BY_LANG[code] for code in langs]
+    if len(pools) == 1:
+        return pools[0]
+    # Interleave so the channel gets language variety, not one block per language.
+    interleaved: list[str] = []
+    max_len = max(len(p) for p in pools)
+    for i in range(max_len):
+        for pool in pools:
+            if i < len(pool):
+                interleaved.append(pool[i])
+    return tuple(interleaved)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse CLI options."""
     parser = argparse.ArgumentParser(
-        description="Post demo suspicious keyword messages to a Telegram test channel.",
+        description=(
+            "Post demo suspicious keyword messages to a Telegram test channel "
+            "(supports multiple languages)."
+        ),
     )
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Send all built-in demo test messages.",
+        help="Send all built-in demo messages for the selected language(s).",
+    )
+    parser.add_argument(
+        "--lang",
+        "-l",
+        default="en",
+        help=(
+            "Language code(s): en, es, fr, ar, ru, bn, zh, hi, pt, de. "
+            "Comma-separate for several, or use mix/all for every language. Default: en"
+        ),
     )
     parser.add_argument(
         "--index",
         type=int,
-        help="Send one built-in message by 1-based index.",
+        help="Send one built-in message by 1-based index (within the selected language set).",
     )
     parser.add_argument(
         "--message",
@@ -149,38 +293,55 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--list",
         action="store_true",
-        help="List built-in demo messages and exit.",
+        help="List built-in demo messages (for --lang) and exit.",
+    )
+    parser.add_argument(
+        "--list-langs",
+        action="store_true",
+        help="List supported language codes and exit.",
     )
     return parser.parse_args(argv)
 
 
 def select_messages(args: argparse.Namespace) -> tuple[str, ...]:
     """Return the message batch selected on the command line."""
-    if args.list:
+    if args.list or getattr(args, "list_langs", False):
         return ()
 
     if args.message:
         return (args.message.strip(),)
 
+    langs = parse_lang_codes(getattr(args, "lang", None))
+    pool = messages_for_langs(langs)
+
     if args.index is not None:
-        if args.index < 1 or args.index > len(DEFAULT_TEST_MESSAGES):
-            raise BotPostError(
-                f"--index must be between 1 and {len(DEFAULT_TEST_MESSAGES)}"
-            )
-        return (DEFAULT_TEST_MESSAGES[args.index - 1],)
+        if args.index < 1 or args.index > len(pool):
+            raise BotPostError(f"--index must be between 1 and {len(pool)}")
+        return (pool[args.index - 1],)
 
     if args.all:
-        return DEFAULT_TEST_MESSAGES
+        return pool
 
-    # Default: send the first demo message only.
-    return (DEFAULT_TEST_MESSAGES[0],)
+    # Default: first message of the selected language set.
+    return (pool[0],)
 
 
-def print_message_list() -> None:
-    """Print numbered demo messages."""
-    print("Built-in demo test messages:")
-    for index, message in enumerate(DEFAULT_TEST_MESSAGES, start=1):
+def print_message_list(langs: list[str] | None = None) -> None:
+    """Print numbered demo messages for the selected languages."""
+    codes = langs or ["en"]
+    pool = messages_for_langs(codes)
+    print(f"Built-in demo test messages ({', '.join(codes)}):")
+    for index, message in enumerate(pool, start=1):
         print(f"  {index}. {message}")
+
+
+def print_lang_list() -> None:
+    """Print supported language codes."""
+    print("Supported languages:")
+    for code in SUPPORTED_LANGS:
+        count = len(TEST_MESSAGES_BY_LANG[code])
+        print(f"  {code}  ({count} messages)")
+    print("  mix / all  (every language, interleaved)")
 
 
 def print_results(config: BotPostConfig, results: list[PostResult]) -> None:
@@ -203,8 +364,17 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     args = parse_args(argv)
 
+    if args.list_langs:
+        print_lang_list()
+        return 0
+
     if args.list:
-        print_message_list()
+        try:
+            langs = parse_lang_codes(args.lang)
+        except BotPostError as exc:
+            print(f"Error: {exc}")
+            return 1
+        print_message_list(langs)
         return 0
 
     try:
