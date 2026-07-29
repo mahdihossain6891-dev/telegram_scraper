@@ -1,227 +1,72 @@
 # Design System Master File
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
+> **LOGIC:** When building a specific page, first check `design-system/telegram-scraper/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
-> If not, strictly follow the rules below.
 
 ---
 
-**Project:** Telegram Scraper
-**Generated:** 2026-07-18 17:09:25
-**Category:** Analytics Dashboard
-**Design Dials:** Variance 5/10 (Balanced / Modern) | Motion 4/10 (Standard) | Density 8/10 (Dense / Dashboard)
+**Project:** Telegram Threat Console  
+**Theme:** Dark / light glassmorphism SOC dashboard (premium)  
+**Generated:** 2026-07-21  
+**Category:** Threat Intelligence Dashboard  
+**Design Dials:** Variance 6/10 | Motion 5/10 | Density 7/10  
 
 ---
 
 ## Global Rules
 
-### Color Palette
+### Theme system
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#1E40AF` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#3B82F6` | `--color-secondary` |
-| Accent/CTA | `#D97706` | `--color-accent` |
-| Background | `#F8FAFC` | `--color-background` |
-| Foreground | `#1E3A8A` | `--color-foreground` |
-| Muted | `#E9EEF6` | `--color-muted` |
-| Border | `#DBEAFE` | `--color-border` |
-| Destructive | `#DC2626` | `--color-destructive` |
-| Ring | `#1E40AF` | `--color-ring` |
+- `data-theme="dark" | "light"` on `<html>` via `ThemeProvider`
+- Persist `localStorage` key `threat-console.theme`; init from `prefers-color-scheme`
+- Prefer CSS variables — never hardcode page chrome hex when a token exists
 
-**Color Notes:** Blue data + amber highlights [Accent adjusted from #F59E0B for WCAG 3:1]
+### Color Palette (dark default)
+
+| Role | Dark | Light | CSS Variable |
+|------|------|-------|--------------|
+| Background | `#0b0b12` | `#f4f5f9` | `--color-background` |
+| Surface (glass) | `rgba(24,24,36,0.72)` | `rgba(255,255,255,0.86)` | `--color-surface` |
+| Foreground | `#f1f5f9` | `#0f172a` | `--color-foreground` |
+| Primary / accent | `#a78bfa` / `#8b5cf6` | `#7c3aed` | `--color-primary` / `--color-accent` |
+| Secondary | `#818cf8` | `#6366f1` | `--color-secondary` |
+| Muted | `#94a3b8` | `#64748b` | `--color-muted` |
+| Border | `rgba(148,163,184,0.12)` | `rgba(15,23,42,0.08)` | `--color-border` |
+| Success / Low | `#34d399` | `#10b981` | `--color-success` |
+| Warning / Medium | `#fbbf24` | `#f59e0b` | `--color-warning` |
+| High | `#fb923c` | `#f97316` | `--color-high` |
+| Critical | `#f87171` | `#ef4444` | `--color-destructive` |
+| Glow | purple neon | soft purple | `--color-glow` / `--shadow-glow` |
 
 ### Typography
 
-- **Heading Font:** Fira Code
-- **Body Font:** Fira Sans
-- **Mood:** dashboard, data, analytics, code, technical, precise
-- **Google Fonts:** [Fira Code + Fira Sans](https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap)
+- **Display:** Plus Jakarta Sans (`--font-jakarta`)
+- **Body:** Inter (`--font-inter`)
+- **Mono:** IDs, timestamps, Telegram IDs
 
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
-```
+### Layout (SOC shell)
 
-### Spacing Variables
+- Collapsible sidebar (`--sidebar-width` / `--sidebar-collapsed`)
+- Glass cards: blur + border + hover lift (`150–250ms`)
+- Navbar: page title (SOC label) + source badge + live / collection / risk strip
+- Settings drawer: Scope filters + Live refresh (do not remove)
+- Nav labels map to existing pages: Dashboard→Command, Threat Monitoring→Intel, Alerts→Ops, Channels→Sources, Users→Cases
+- Extra routes stay first-class: Behavioral (`/behavioral-analytics`), Sébastien (`/ai`), Threat Simulation
 
-*Density: 8/10 — Dense / Dashboard*
+### Charts (ECharts)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `2px` / `0.125rem` | Tight gaps |
-| `--space-sm` | `4px` / `0.25rem` | Icon gaps, inline spacing |
-| `--space-md` | `8px` / `0.5rem` | Standard padding |
-| `--space-lg` | `12px` / `0.75rem` | Section padding |
-| `--space-xl` | `16px` / `1rem` | Large gaps |
-| `--space-2xl` | `24px` / `1.5rem` | Section margins |
-| `--space-3xl` | `32px` / `2rem` | Hero padding |
+- Theme-aware via CSS vars / `withThemeColors` / `ThreatChart`
+- Smooth area lines, severity donut, purple heatmap ramp
+- Tooltips use `--color-chart-tooltip-*`
 
-### Shadow Depths
+### Motion
 
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
+- Card hover lift, sidebar width transition, theme token cross-fade
+- Respect `prefers-reduced-motion`
 
----
+### Anti-patterns
 
-## Component Specs
-
-### Buttons
-
-```css
-/* Primary Button */
-.btn-primary {
-  background: #D97706;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Secondary Button */
-.btn-secondary {
-  background: transparent;
-  color: #1E40AF;
-  border: 2px solid #1E40AF;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-```
-
-### Cards
-
-```css
-.card {
-  background: #F8FAFC;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-```
-
-### Inputs
-
-```css
-.input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
-}
-
-.input:focus {
-  border-color: #1E40AF;
-  outline: none;
-  box-shadow: 0 0 0 3px #1E40AF20;
-}
-```
-
-### Modals
-
-```css
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-}
-```
-
----
-
-## Style Guidelines
-
-**Style:** Data-Dense Dashboard
-
-**Keywords:** Multiple charts/widgets, data tables, KPI cards, minimal padding, grid layout, space-efficient, maximum data visibility
-
-**Best For:** Business intelligence dashboards, financial analytics, enterprise reporting, operational dashboards, data warehousing
-
-**Key Effects:** Hover tooltips, chart zoom on click, row highlighting on hover, smooth filter animations, data loading spinners
-
-### Page Pattern
-
-**Pattern Name:** Real-Time / Operations Landing
-
-- **Conversion Strategy:** For ops/security/iot products. Demo or sandbox link. Trust signals.
-- **CTA Placement:** Primary CTA in nav + After metrics
-- **Section Order:** 1. Hero (product + live preview or status), 2. Key metrics/indicators, 3. How it works, 4. CTA (Start trial / Contact)
-
----
-
-## Motion
-
-**Stagger List** (Standard) — Trigger: load or scroll | Duration: 300-450ms | Easing: `back.out(1.4)`
-
-```js
-gsap.from('.grid-item', { opacity: 0, scale: 0.92, y: 16, duration: 0.4, stagger: { each: 0.06, from: 'start', grid: 'auto' }, ease: 'back.out(1.4)' });
-```
-
-**Framework notes:** grid: 'auto' lets GSAP infer rows/columns from a CSS grid layout for a natural wave stagger
-
-- ✅ Combine with from: 'center' for a bento-grid layout to draw the eye inward first
-- ❌ Don't use back.out on dense data tables; the overshoot reads as sloppy on informational UI
-- ⚡ Group DOM writes; avoid interleaving layout reads (getBoundingClientRect) between staggered tweens
-
----
-
-## Anti-Patterns (Do NOT Use)
-
-- ❌ Ornate design
-- ❌ No filtering
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
-
----
-
-## Pre-Delivery Checklist
-
-Before delivering any UI code, verify:
-
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
-- [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
-- [ ] Focus states visible for keyboard navigation
-- [ ] `prefers-reduced-motion` respected
-- [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
-- [ ] No horizontal scroll on mobile
+- No Tailwind migration (CSS variables only)
+- No new chart libraries
+- No removing pages, filters, refresh, or API proxies
+- No backend / scraper / AI planner changes for UI work

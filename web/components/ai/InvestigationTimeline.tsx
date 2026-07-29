@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { ThreatReport } from "@/components/ai/threat-report";
 import type { AiRetrieved } from "@/components/ai/types";
@@ -8,10 +8,13 @@ import { riskBandClass } from "@/lib/risk-bands";
 
 type Tab = "events" | "messages" | "relationships";
 
+type Focus = "risk" | "behavior" | "alerts" | "network" | "report" | "general";
+
 type Props = {
   report: ThreatReport | null;
   retrieved?: AiRetrieved[];
   workflow?: Record<string, unknown>;
+  focus?: Focus;
 };
 
 type TimelineRow = {
@@ -23,8 +26,46 @@ type TimelineRow = {
   band?: string;
 };
 
-export function InvestigationTimeline({ report, retrieved, workflow }: Props) {
-  const [tab, setTab] = useState<Tab>("messages");
+function defaultTabForFocus(focus: Focus): Tab {
+  if (focus === "network") return "relationships";
+  if (focus === "behavior" || focus === "alerts") return "messages";
+  return "messages";
+}
+
+function tabsForFocus(focus: Focus): Array<[Tab, string]> {
+  if (focus === "network") {
+    return [
+      ["relationships", "Relationships"],
+      ["messages", "Messages"],
+      ["events", "Events"],
+    ];
+  }
+  if (focus === "behavior" || focus === "alerts") {
+    return [
+      ["messages", "Messages"],
+      ["events", "Events"],
+      ["relationships", "Relationships"],
+    ];
+  }
+  return [
+    ["messages", "Messages"],
+    ["relationships", "Relationships"],
+    ["events", "Events"],
+  ];
+}
+
+export function InvestigationTimeline({
+  report,
+  retrieved,
+  workflow,
+  focus = "general",
+}: Props) {
+  const [tab, setTab] = useState<Tab>(() => defaultTabForFocus(focus));
+  const tabOptions = tabsForFocus(focus);
+
+  useEffect(() => {
+    setTab(defaultTabForFocus(focus));
+  }, [focus]);
 
   const rows = useMemo(() => {
     const out: TimelineRow[] = [];
@@ -106,15 +147,17 @@ export function InvestigationTimeline({ report, retrieved, workflow }: Props) {
   return (
     <section className="investigation-timeline" aria-label="Investigation timeline">
       <header className="investigation-timeline-head">
-        <h3>Timeline</h3>
+        <h3>
+          {focus === "network"
+            ? "Network"
+            : focus === "behavior"
+              ? "Behavior evidence"
+              : focus === "alerts"
+                ? "Alert evidence"
+                : "Evidence trail"}
+        </h3>
         <div className="investigation-timeline-tabs" role="tablist">
-          {(
-            [
-              ["events", "Events"],
-              ["messages", "Messages"],
-              ["relationships", "Relationships"],
-            ] as const
-          ).map(([id, label]) => (
+          {tabOptions.map(([id, label]) => (
             <button
               key={id}
               type="button"

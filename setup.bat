@@ -24,6 +24,21 @@ if not exist ".env" (
     echo Created .env from .env.example — add your Telegram API credentials.
 )
 
+where node >nul 2>&1
+if not errorlevel 1 (
+    if not exist "web\node_modules" (
+        echo Installing Next.js dependencies...
+        pushd web
+        call npm install
+        popd
+    )
+    if not exist "web\.env.local" (
+        if exist "web\.env.local.example" copy /Y "web\.env.local.example" "web\.env.local" >nul
+    )
+) else (
+    echo Node.js not found — install Node LTS to run the Next.js dashboard ^(dashboard.bat^).
+)
+
 echo.
 echo Setup complete. Run auth.bat to log in to Telegram.
 exit /b 0

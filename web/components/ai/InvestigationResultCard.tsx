@@ -8,7 +8,8 @@ import {
 } from "@/components/ai/EntitySelectionPanel";
 import { InvestigationMetricsGrid } from "@/components/ai/InvestigationMetricsGrid";
 import { InvestigationTimeline } from "@/components/ai/InvestigationTimeline";
-import type { ChatMessage, EntityCandidate } from "./types";
+import type { ChatMessage, EntityCandidate, InvestigationSectionId } from "./types";
+import { intentFocus } from "./types";
 import { confidenceClass, dedupeEntityCandidates, parseInvestigationSections } from "./utils";
 
 type Props = {
@@ -17,6 +18,46 @@ type Props = {
   busy?: boolean;
   onShowEvidence: () => void;
   onSelectEntity?: (candidate: EntityCandidate, originalQuery: string) => void;
+};
+
+const SECTION_PRIORITY: Record<string, InvestigationSectionId[]> = {
+  risk: [
+    "executive_summary",
+    "risk_assessment",
+    "subject_information",
+    "evidence_analysis",
+    "key_findings",
+    "analyst_recommendation",
+  ],
+  behavior: [
+    "behavior_analysis",
+    "executive_summary",
+    "key_findings",
+    "evidence_analysis",
+    "recommended_actions",
+  ],
+  alerts: [
+    "evidence_analysis",
+    "threat_classification",
+    "executive_summary",
+    "risk_assessment",
+    "supporting_evidence",
+  ],
+  network: [
+    "network_analysis",
+    "executive_summary",
+    "subject_information",
+    "key_findings",
+    "recommended_actions",
+  ],
+  report: [
+    "executive_summary",
+    "key_findings",
+    "risk_assessment",
+    "analyst_recommendation",
+    "confidence_level",
+  ],
+  general: [],
 };
 
 function isAmbiguousStatus(status?: string, content?: string): boolean {
@@ -42,6 +83,27 @@ function isNoMatchStatus(status?: string, content?: string): boolean {
   );
 }
 
+function prioritizeSections(
+  sections: ReturnType<typeof parseInvestigationSections>,
+  focus: string,
+) {
+  const order = SECTION_PRIORITY[focus] || [];
+  if (!order.length) return sections;
+  const rank = new Map(order.map((id, i) => [id, i]));
+  return [...sections].sort((a, b) => {
+    const ra = rank.has(a.id) ? rank.get(a.id)! : 100;
+    const rb = rank.has(b.id) ? rank.get(b.id)! : 100;
+    return ra - rb;
+  }).filter((section, _i, arr) => {
+    // Keep prioritized sections first; drop low-priority noise when focused.
+    if (!order.length) return true;
+    if (order.includes(section.id)) return true;
+    // Still keep a couple extras if we have few prioritized hits.
+    const prioritizedCount = arr.filter((s) => order.includes(s.id)).length;
+    return prioritizedCount < 2;
+  });
+}
+
 export function InvestigationResultCard({
   query,
   message,
@@ -50,6 +112,7 @@ export function InvestigationResultCard({
   onSelectEntity,
 }: Props) {
   const er = message.entityResolution;
+  const focus = intentFocus(message.intent);
   const isNoMatch = isNoMatchStatus(er?.status, message.content);
   const isAmbiguous = isAmbiguousStatus(er?.status, message.content);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
@@ -58,11 +121,12 @@ export function InvestigationResultCard({
     () => dedupeEntityCandidates(er?.candidates || []),
     [er?.candidates],
   );
-  const sections =
-    isNoMatch || isAmbiguous ? [] : parseInvestigationSections(message.content);
+  const sections = useMemo(() => {
+    if (isNoMatch || isAmbiguous) return [];
+    return prioritizeSections(parseInvestigationSections(message.content), focus);
+  }, [isNoMatch, isAmbiguous, message.content, focus]);
   const unmatched = er?.unmatched_query || query;
 
-  // If duplicates collapsed to a single Telegram identity, auto-investigate.
   useEffect(() => {
     if (!isAmbiguous || !onSelectEntity || busy || selectedId != null) return;
     if (autoSelectedRef.current) return;
@@ -78,16 +142,27 @@ export function InvestigationResultCard({
     (er?.status || "").toLowerCase().includes("target") ||
     /no investigation target selected/i.test(message.content || "");
 
+  const focusLabel =
+    focus === "behavior"
+      ? "Behavior analysis"
+      : focus === "network"
+        ? "Network analysis"
+        : focus === "alerts"
+          ? "Alert analysis"
+          : focus === "report"
+            ? "Intelligence report"
+            : "Investigation";
+
   return (
     <article
-      className={`ai-result-card${message.refused ? " refused" : ""}${
+      className={`ai-result-card ai-focus-${focus}${message.refused ? " refused" : ""}${
         isNoMatch ? " ai-result-nomatch" : ""
       }${isAmbiguous ? " ai-result-ambiguous" : ""}`}
-      aria-label="Investigation result"
+      aria-label={`${focusLabel} result`}
     >
       <header className="ai-result-head">
         <div>
-          <p className="ai-result-query-label">Investigation</p>
+          <p className="ai-result-query-label">{focusLabel}</p>
           <h2 className="ai-result-query">{query}</h2>
         </div>
         <div className="ai-result-badges">
@@ -103,7 +178,6 @@ export function InvestigationResultCard({
             <span className={confidenceClass(message.confidence)}>{message.confidence}</span>
           ) : null}
           {message.intent ? <span className="ai-intent">{message.intent}</span> : null}
-          {message.model ? <span className="caption">{message.model}</span> : null}
         </div>
       </header>
 
@@ -111,9 +185,14 @@ export function InvestigationResultCard({
         isTargetRequired ? (
           <section className="ai-entity-nomatch" aria-label="Target required">
             <h3>No investigation target selected</h3>
-            <p>
-              Please search for and select a monitored user before starting an
-              investigation.
+            <p className="ai-target-required-body">
+              {(message.content || "")
+                .split(/\n\n/)
+                .map((p) => p.trim())
+                .filter(Boolean)
+                .slice(0, 2)
+                .join(" ") ||
+                "Please search for and select a monitored user before starting this investigation."}
             </p>
             <p className="caption">Suggestions:</p>
             <ul>
@@ -167,12 +246,14 @@ export function InvestigationResultCard({
               report={message.threatReport}
               retrieved={message.retrieved}
               confidence={message.confidence}
+              focus={focus}
             />
           ) : null}
           <InvestigationTimeline
             report={message.threatReport || null}
             retrieved={message.retrieved}
             workflow={message.workflow}
+            focus={focus}
           />
           <div className="ai-result-sections">
             {sections.map((section) => (

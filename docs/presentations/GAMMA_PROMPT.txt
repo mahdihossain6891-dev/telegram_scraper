@@ -1,0 +1,161 @@
+# Gamma prompt only — copy everything below the line into Gamma → Create with AI
+
+---
+
+ROLE
+You are designing a stakeholder product deck for "Threat Console" — an authorized Telegram OSINT / threat-intelligence platform. Write like a SOC product demo: precise, capability-first, no hype, no invented features.
+
+VISUAL SYSTEM
+- Dark premium glassmorphism SOC aesthetic
+- Background: near-black / deep navy (#0b0b12)
+- Accent: violet (#8b5cf6 / #a78bfa)
+- Severity palette: Low green · Medium amber · High orange · Critical red
+- Typography: clean modern sans; mono for IDs / API paths
+- Layout: one idea per slide, short bullets, tables where useful, 1–2 diagrams max
+- No stock purple-gradient SaaS clichés beyond the defined violet accent
+- Include small UI mock cues only as abstract panels (sidebar + KPI strip), not fake screenshots
+
+SLIDE COUNT & STRUCTURE
+Create exactly 24 slides in this order. Every slide needs a clear title. Prefer bullets and compact tables over paragraphs.
+
+PRODUCT FACTS (USE THESE SPECS)
+
+PRODUCT NAME
+Threat Console — Telegram OSINT Intelligence Platform
+AI assistant brand: Sébastien (investigation copilot, NOT a chatbot)
+
+PURPOSE
+Authorized monitoring of Telegram channels/groups the operator can already access. Only keyword-flagged messages are stored. Live ops + isolated simulation for demos/training/AI without touching production data.
+
+CORE LOOP
+Collect → Enrich → Monitor → Analyze → Investigate → Simulate → Validate
+
+STACK
+- Collection: Python 3.11+, Telethon, persistent session under data/
+- Storage: MongoDB (Docker Compose via mongo.bat); live DB + isolated simulation DB
+- API: FastAPI (~port 8510/8501) — /api/data, /api/mode, /api/scrape, /api/personnel, /api/behavioral, /api/alerts, /api/settings/env, /api/ai, /api/simulator, /api/evaluation
+- UI: Next.js 15 + React on :3000; ECharts; dark/light theme
+- AI: RAG + embeddings (Mongo vector collection), investigation planner, OpenRouter / Ollama / LM Studio / OpenAI-compatible
+- Quality: pytest; evaluation/ benchmarking with Intelligence Quality Score (IQS)
+
+KEYWORD CATEGORIES (only matching messages stored)
+1) narcotics  2) firearms  3) human_trafficking
+Message enrichment: risk_score, risk_level, risk_factors, keyword hits, chat/sender/timestamp/media metadata
+
+ENTITY EXTRACTION
+url, domain, email, phone, mention, hashtag, wallet, address
+Powers search, relationships, Sébastien evidence; re-runnable without re-scrape
+
+CONSOLE NAV (SOC labels)
+Monitor: Dashboard · Threat Monitoring · Alerts
+Entities: Channels · Users
+Analyze: Analytics · Simulator
+Intel+: Behavioral Analytics (/behavioral-analytics) · Sébastien (/ai)
+Global: Live ⇄ Simulation mode toggle · Scope filters · Settings · theme
+
+DASHBOARD FUNCTIONALITY
+- KPI strip (messages, threats, sources, risk)
+- Severity mix + activity trends
+- Scrape control (live Telethon) / Generate control (simulation)
+- Scope: include private DMs toggle, chat type, keyword categories, chat multi-select, date range
+- Auto-refresh (live) or sim feed indicator
+
+ALERTS FUNCTIONALITY
+- Optional Telegram bot alerts on scrape (TELEGRAM_ALERTS_*)
+- Rules: cooldown, multi-category-only, min keywords
+- Simulation: alerts logged locally — never sent to Telegram
+
+PERSONNEL / USERS
+- Rebuild user_activity from messages
+- Dossiers: message counts, groups, risk overlay, last seen
+- API: GET /api/personnel, GET /api/personnel/{id}, POST rebuild
+
+BEHAVIORAL ANALYTICS (isolated module)
+- Own collection behavioral_analytics; own /api/behavioral/* routes
+- Profiles: behavior score/status, night activity, spikes, forwarding/media/deletion signals
+- Soft scoring for sparse/sim data so scores aren’t all zero
+- POST /api/behavioral/rebuild recomputes from messages/users/chats — never mutates scrape source
+
+SÉBASTIEN — FUNCTIONAL PIPELINE
+User question
+→ Intent classification (investigate_user, analyze_behavior, explain_alert, timeline, relationships, dashboard_summary, report, …; unknown blocks LLM)
+→ Entity resolution (@username / Telegram ID / display name; ambiguous → ask; missing concrete entity → fail closed)
+→ Investigation planner builds deterministic tool plan
+→ Read-only tools execute: risk, behavior, alerts, personnel, timeline, relationship, search, dashboard, report, resolve_entity
+→ Evidence validation + context builder
+→ LLM explains grounded context only (citations / confidence)
+→ Structured investigation report + saved cases + workflow panel + evidence drawer
+
+AI PROVIDERS / CONTROL CENTER
+- Chat providers: openrouter | ollama | lmstudio | openai_compatible | local(=ollama)
+- Embeddings can differ from chat (e.g. OpenRouter chat + local nomic-embed-text)
+- Vector backend: mongodb (ai_embeddings)
+- Control Center: provider/model pick, generation params, cache clear, provider test, prompt reload
+- Security: ReadOnlyPolicy — AI never mutates risk scores, alerts, or evidence stores
+- LIVE vs SIMULATION memory/environment isolation
+
+SIMULATION MODE (console-wide)
+- Mode API: GET/PUT /api/mode, POST /api/mode/end
+- Isolated Mongo: telegram_scraper_simulation (configurable)
+- Same UI pages as live; Simulation banner
+- Generate AI/fallback dummy messages; multi-select scenarios (narcotics, firearms, human_trafficking)
+- Volume presets e.g. 24 / 48 / 80
+- After generate: personnel rebuild, behavioral rebuild, embedding index for Sébastien
+- Scrape jobs reclaim stuck generates; mode persisted
+
+SIMULATOR LAB PAGE
+- Isolated /api/simulator/*
+- Widgets: overview, sessions, scenarios, personas, groups, live activity, pipeline inspector, benchmarks, reports, configuration
+- Internal testing lab — production Mongo untouched by simulator console package
+
+EVALUATION / BENCHMARKING
+- Isolated evaluation/ + /api/evaluation/*
+- Evaluators: keyword, risk, behavior, relationship, alert, pipeline, Sébastien
+- Intelligence Quality Score (IQS), history, regression compare, leaderboard
+- Ground truth hidden from sim UI; used only inside evaluation
+
+SETTINGS (shared)
+- Dark/light theme
+- Telegram API ID / Hash / phone
+- OpenRouter key (saving can auto-enable AI_ENABLED + provider wiring)
+- Persisted to .env via /api/settings/env
+
+OPS / DEPLOY
+- dashboard.bat → FastAPI + Next.js
+- mongo.bat → Docker Mongo
+- auth / discover / scrape / extract / analytics / export / clear / auto-update
+- Scrape limits: 100 / 500 / 1000 (live)
+- Vercel hosts Next.js read-only from export.json (no Telethon/Mongo on Vercel)
+
+SLIDE OUTLINE (24)
+
+1. TITLE — Threat Console + subtitle (Sébastien · Live + Simulation · keyword OSINT)
+2. PROBLEM — noisy Telegram threat chatter; analyst overload; need live ops + safe training data
+3. SOLUTION — authorized collect → enrich → monitor → analyze → investigate → simulate → validate
+4. FEATURE MAP — table of seven pillars with 2–4 capabilities each
+5. ARCHITECTURE DIAGRAM — Telethon → keyword scrape jobs → Mongo (live | sim) → FastAPI routers → Next.js console (+ Sébastien / Behavioral / Simulator / Evaluation)
+6. COLLECTION SPECS — Telethon auth/session, chat discovery, keyword-only storage, scrape limits 100/500/1000, dashboard scrape control, auto-update loop, optional demo bot
+7. KEYWORD + RISK SPECS — 3 categories; stored fields (risk_score/level/factors, hits, sender, chat, media); why filter-at-ingest matters
+8. ENTITY EXTRACTION SPECS — full entity type list; what downstream features consume them
+9. CONSOLE SHELL — nav groups + Live⇄Sim toggle + scope + theme; list every page/route
+10. DASHBOARD FUNCTIONALITY — KPIs, charts, scrape/generate, scope filters (detail the filter controls)
+11. THREAT MONITORING — flagged feed, category/risk filters, keyword badges
+12. ALERTS — Telegram alert rules + simulation local logging behavior
+13. CHANNELS & USERS — sources list; personnel dossiers + rebuild API
+14. ANALYTICS — chart types + CLI/HTML export path
+15. BEHAVIORAL ANALYTICS — isolation model, profile signals, soft scoring, rebuild endpoint, UI route
+16. SÉBASTIEN OVERVIEW — “investigation coordinator not chatbot”; pipeline steps as numbered list
+17. SÉBASTIEN FUNCTIONALITY — intents, entity gate, tool list, citations/confidence, cases, Control Center
+18. AI PROVIDERS & GUARDRAILS — provider matrix, embeddings/RAG, ReadOnlyPolicy, env isolation LIVE/SIM
+19. SIMULATION MODE SPECS — DB isolation table, multi-scenario generate, volumes, post-generate rebuild/index, mode API
+20. SIMULATOR LAB + EVALUATION — lab widgets + IQS/benchmark evaluators (two-column or split bullets)
+21. SETTINGS & OPS — settings fields; bat scripts; Vercel read-only note
+22. TECH STACK TABLE — collection / store / API / UI / AI / quality
+23. 2-MINUTE DEMO PATH — 6 numbered steps (live → monitoring → behavioral → Sébastien → switch sim → generate → Sébastien on persona)
+24. CLOSE — tagline Collect → Enrich → Monitor → Analyze → Investigate → Simulate → Validate + “Questions?”
+
+RULES
+- Do not invent integrations (no Slack/Jira/MITRE unless listed as future only — do not put future items on feature slides)
+- Prefer concrete nouns: endpoint names, DB names, tool names, category names, ports
+- Keep bullets ≤ 8 words when possible; use tables for matrices
+- Professional threat-intel tone suitable for technical demos

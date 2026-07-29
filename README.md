@@ -1,6 +1,6 @@
 # Telegram Intelligence Scraper
 
-Modular Python application for authorized OSINT workflows over Telegram data you can already access (public channels, groups, and your own chats). Only messages matching configured keyword categories are stored locally in SQLite.
+Modular Python application for authorized OSINT workflows over Telegram data you can already access (public channels, groups, and your own chats). Only messages matching configured keyword categories are stored locally in **MongoDB**.
 
 ## Features
 
@@ -10,12 +10,14 @@ Modular Python application for authorized OSINT workflows over Telegram data you
 - Entity extraction (URLs, domains, emails, phones, mentions, hashtags)
 - Analytics with Plotly charts
 - CSV/JSON export
-- Streamlit dashboard
+- Next.js dashboard (local live MongoDB via FastAPI, or static export on Vercel)
 - Data cleanup tool (private chats, runtime files, credentials)
 
 ## Requirements
 
 - Python 3.11+
+- Node.js 20+ (for the Next.js dashboard)
+- Docker Desktop (recommended) **or** a local MongoDB on `127.0.0.1:27017`
 - Telegram API credentials from [my.telegram.org/apps](https://my.telegram.org/apps)
 - Windows batch launchers included (PowerShell venv activation not required)
 
@@ -27,16 +29,20 @@ cd C:\Users\mahdi\Projects\telegram_scraper
 # 1. Install dependencies
 .\setup.bat
 
-# 2. Add credentials to .env (copy from .env.example)
-#    TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
+# 2. Start MongoDB (Docker Desktop must be running)
+.\mongo.bat
 
-# 3. Log in to Telegram (interactive — enter SMS code)
+# 3. Add credentials to .env (copy from .env.example)
+#    TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
+#    MONGODB_URI=mongodb://127.0.0.1:27017/telegram_scraper
+
+# 4. Log in to Telegram (interactive — enter SMS code)
 .\auth.bat
 
-# 4. Scrape a channel or group (pick by index, not private chat)
+# 5. Scrape a channel or group (pick by index, not private chat)
 .\scrape.bat
 
-# 5. Analytics, export, dashboard
+# 6. Analytics, export, dashboard
 .\analytics.bat
 .\export.bat
 .\dashboard.bat
@@ -51,13 +57,14 @@ auth.bat → discover.bat → scrape.bat → extract.bat → analytics.bat → e
 | Script | Purpose |
 |---|---|
 | `setup.bat` | Create `.venv` and install dependencies |
+| `mongo.bat` | Start MongoDB via Docker Compose |
 | `auth.bat` | Telegram login (saves session under `data/`) |
 | `discover.bat` | List accessible chats |
-| `scrape.bat` | Collect keyword-flagged messages into SQLite |
+| `scrape.bat` | Collect keyword-flagged messages into MongoDB |
 | `extract.bat` | Re-run content entity extraction on stored messages |
 | `analytics.bat` | Print stats and save Plotly HTML charts to `exports/` |
 | `export.bat` | Export CSV + JSON to `exports/` |
-| `dashboard.bat` | Launch Streamlit UI |
+| `dashboard.bat` | Launch FastAPI API + Next.js UI (http://localhost:3000) |
 | `clear.bat` | Remove private chats and/or reset runtime data |
 
 ### Non-interactive scrape (for testing)
@@ -82,22 +89,24 @@ Runs scrape → extract → analytics → export for chat index `1` with limit `
 
 ```
 telegram_scraper/
-├── app.py                 # Streamlit entry point
-├── dashboard.py           # Dashboard pages and helpers
+├── server.py              # FastAPI live /api/data (MongoDB)
+├── web/                   # Next.js dashboard (local + Vercel)
 ├── config.py              # Settings from .env
 ├── telegram_client.py     # Telethon auth and session
 ├── chat_discovery.py      # List and select chats
 ├── keyword_filter.py      # Keyword categories
 ├── message_scraper.py     # Message collection
-├── database.py            # SQLAlchemy engine/sessions
-├── models.py              # ORM models
+├── database.py            # MongoDB sessions
+├── models.py              # MongoDB document models
 ├── entity_extractor.py    # Regex entity extraction
 ├── analytics.py           # Stats and charts
 ├── exporter.py            # CSV/JSON export
 ├── clear_data.py          # Cleanup utilities
 ├── utils.py               # Logging
 ├── tests/                 # pytest suite
-├── data/                  # Session + SQLite (gitignored)
+├── data/                  # Telegram session (gitignored)
+├── docker-compose.yml     # MongoDB container
+├── mongo.bat              # Start MongoDB
 ├── exports/               # Charts and exports (gitignored)
 └── logs/                  # Application logs (gitignored)
 ```
@@ -121,7 +130,8 @@ TELEGRAM_API_ID=your_api_id
 TELEGRAM_API_HASH=your_api_hash
 TELEGRAM_PHONE=+1234567890
 TELEGRAM_SESSION_NAME=telegram_scraper
-DATABASE_URL=sqlite:///data/telegram_scraper.db
+DATABASE_URL=mongodb://127.0.0.1:27017/telegram_scraper
+MONGODB_URI=mongodb://127.0.0.1:27017/telegram_scraper
 LOG_LEVEL=INFO
 ```
 
@@ -148,102 +158,54 @@ After a full reset, re-fill `.env`, run `auth.bat`, then scrape again.
 ## Dashboard pages
 
 - Overview
-- Chat Explorer (private chats hidden by default)
+- Chats
+- Messages
+- Keywords
 - Analytics
-- Entity Explorer
+- Entities
 - Search
 - Export
 
-Launch with `dashboard.bat` → http://localhost:8501
+Launch with `dashboard.bat` → http://localhost:3000
 
-## Deploy dashboard on Streamlit Cloud (recommended)
+Local stack:
+- **Next.js** (`web/`) on port **3000** — UI
+- **FastAPI** (`server.py`) on port **8501** — live `/api/data` from MongoDB
 
-Streamlit Cloud cannot run the Telethon scraper, SQLite, or Telegram login. It **can** host the **read-only dashboard** from `app.py` using exported JSON.
+`web/.env.local` should contain `DASHBOARD_API_URL=http://127.0.0.1:8501` so the Next route proxies live data. Without the API, Next falls back to `web/public/data/export.json` or the bundled sample.
 
-Architecture:
+## Deploy dashboard on Vercel (cloud)
+
+Vercel hosts the same Next.js app under `web/` from `export.json` (read-only). It cannot run Telethon or MongoDB.
 
 ```
-Local PC: auth → scrape → export.json → streamlit_export.bat
-GitHub:   code + demo/export.sample.json (or your real demo/export.json)
-Streamlit Cloud: app.py reads export.json
+Local PC: auth → scrape → export.bat → vercel_export.bat
+GitHub:   web/ + web/public/data/export.json
+Vercel:   Next.js dashboard
 ```
-
-### 1. Export data locally
 
 ```powershell
 .\export.bat
-.\streamlit_export.bat
-```
-
-This copies `exports/export.json` → `demo/export.json`.
-
-Review the JSON and remove anything sensitive before committing.
-
-### 2. Push to GitHub
-
-Commit the app and sample data (minimum for a working demo):
-
-```powershell
-git add app.py dashboard.py export_dashboard.py demo/export.sample.json .streamlit requirements.txt
-git commit -m "Prepare Streamlit Cloud deployment"
+.\vercel_export.bat
+git add -f web/public/data/export.json
+git commit -m "Refresh Vercel dashboard export"
 git push
 ```
 
-To publish **your real scraped data** (gitignored by default):
-
-```powershell
-git add -f demo/export.json
-git commit -m "Update Streamlit dashboard data"
-git push
-```
-
-### 3. Create Streamlit Cloud app
-
-1. Go to [share.streamlit.io](https://share.streamlit.io)
-2. **New app** → select your GitHub repo
-3. **Main file path:** `app.py`
-4. Deploy
-
-The app starts in **export-only mode** using `demo/export.sample.json` until you push `demo/export.json`.
-
-### 4. Optional secrets
-
-You only need secrets if you plan to run the full SQLite dashboard on Streamlit (not typical). For export-only viewing, skip secrets.
-
-If needed, in Streamlit → App settings → Secrets:
-
-```toml
-TELEGRAM_API_ID = "your_api_id"
-TELEGRAM_API_HASH = "your_api_hash"
-TELEGRAM_PHONE = "+1234567890"
-```
-
-See `.streamlit/secrets.toml.example`.
-
-### 5. Update data later
-
-```powershell
-.\export.bat
-.\streamlit_export.bat
-git add -f demo/export.json
-git commit -m "Refresh dashboard export"
-git push
-```
-
-Streamlit Cloud redeploys on push (or use **Reboot app** in the dashboard).
+Set Vercel **Root Directory** to `web`.
 
 ### What to tell your boss
 
-| Runs on Streamlit Cloud | Runs locally only |
+| Runs on Vercel | Runs locally only |
 |---|---|
 | Read-only dashboard | Telegram authentication |
+| Shared team URL | Scraping & keyword filtering |
+| Auto-refresh from export.json | Live MongoDB custom UI via dashboard.bat |
 | Overview / chats / messages / search | Message scraping |
-| Public demo URL | SQLite database |
+| Public demo URL | MongoDB database |
 | | API credentials (`.env`) |
 
-## Deploy dashboard on Vercel (alternative)
-
-Vercel cannot run the Telethon scraper, SQLite, or Telegram login. It **can** host the **read-only web dashboard** in `web/`.
+### Vercel setup details
 
 Architecture:
 
@@ -312,7 +274,7 @@ Then you do not need to commit export files to git.
 |---|---|
 | Read-only dashboard | Telegram authentication |
 | Search / chat stats | Message scraping |
-| Public demo URL | SQLite database |
+| Public demo URL | MongoDB database |
 | | API credentials (`.env`) |
 
 ## Security notes

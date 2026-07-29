@@ -234,8 +234,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print("\nNext steps:")
     print("  1. Run scrape on the test channel")
-    print("  2. Run export.bat and streamlit_export.bat")
-    print("  3. Push demo/export.json so the dashboard updates")
+    print("  2. Run .\\dashboard.bat for live local Next.js (Mongo via FastAPI)")
+    print("  3. Or run export.bat + vercel_export.bat and push for Vercel")
     return 0
 
 

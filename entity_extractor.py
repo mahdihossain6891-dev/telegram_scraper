@@ -8,18 +8,18 @@ from dataclasses import dataclass
 from typing import ClassVar
 from urllib.parse import urlparse
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from config import Settings, ensure_directories, load_settings
-from database import get_session, init_db
-from models import ExtractedEntity, Message
+from database import MongoSession, get_session, init_db
+from models import ExtractedEntity
 from utils import get_logger
 
 logger = get_logger("entity_extractor")
 
 CONTENT_ENTITY_TYPES: frozenset[str] = frozenset(
-    {"url", "domain", "email", "phone", "mention", "hashtag"}
+    {"url", "domain", "email", "phone", "mention", "hashtag", "wallet", "address"}
+)
+ALERT_ADDRESS_ENTITY_TYPES: frozenset[str] = frozenset(
+    {"phone", "email", "wallet", "address"}
 )
 KEYWORD_ENTITY_TYPES: frozenset[str] = frozenset(
     {"narcotics", "human_trafficking", "firearms"}
@@ -115,6 +115,45 @@ class PhoneExtractor(BaseEntityExtractor):
         return matches
 
 
+class WalletAddressExtractor(BaseEntityExtractor):
+    entity_type = "wallet"
+    _patterns = (
+        re.compile(r"""\b0x[a-fA-F0-9]{40}\b"""),
+        re.compile(r"""\bbc1[a-z0-9]{25,87}\b""", re.IGNORECASE),
+        re.compile(r"""\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b"""),
+        re.compile(r"""\bT[A-Za-z1-9]{33}\b"""),
+    )
+
+    def extract(self, text: str) -> list[EntityMatch]:
+        matches: list[EntityMatch] = []
+        seen: set[str] = set()
+        for pattern in self._patterns:
+            for match in pattern.finditer(text):
+                value = match.group(0)
+                if value in seen:
+                    continue
+                seen.add(value)
+                matches.append(
+                    EntityMatch(self.entity_type, value, match.start(), match.end())
+                )
+        return matches
+
+
+class PhysicalAddressExtractor(BaseEntityExtractor):
+    entity_type = "address"
+    _pattern = re.compile(
+        r"""\b\d{1,5}\s+(?:[A-Za-z0-9.'-]+\s+){0,4}"""
+        r"""(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Way)\b""",
+        re.IGNORECASE,
+    )
+
+    def extract(self, text: str) -> list[EntityMatch]:
+        return [
+            EntityMatch(self.entity_type, match.group(0).strip(), match.start(), match.end())
+            for match in self._pattern.finditer(text)
+        ]
+
+
 class DomainExtractor(BaseEntityExtractor):
     entity_type = "domain"
     _pattern = re.compile(
@@ -154,8 +193,26 @@ DEFAULT_EXTRACTORS: tuple[BaseEntityExtractor, ...] = (
     HashtagExtractor(),
     MentionExtractor(),
     PhoneExtractor(),
+    WalletAddressExtractor(),
+    PhysicalAddressExtractor(),
     DomainExtractor(),
 )
+
+
+def collect_alert_addresses(text: str | None) -> tuple[str, ...]:
+    """Return deduplicated contact addresses suitable for Telegram alert digests."""
+    labels: list[str] = []
+    seen: set[str] = set()
+    for match in extract_entities(text):
+        if match.entity_type not in ALERT_ADDRESS_ENTITY_TYPES:
+            continue
+        label = f"{match.entity_type}: {match.entity_value}"
+        key = label.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        labels.append(label)
+    return tuple(labels)
 
 
 def extract_entities(
@@ -182,22 +239,27 @@ def extract_entities(
 
 
 def entity_already_stored(
-    session: Session,
+    session: MongoSession,
     message_row_id: int,
     entity_type: str,
     entity_value: str,
 ) -> bool:
     """Return True if the entity is already linked to the message."""
-    stmt = select(ExtractedEntity.id).where(
-        ExtractedEntity.message_row_id == message_row_id,
-        ExtractedEntity.entity_type == entity_type,
-        ExtractedEntity.entity_value == entity_value,
+    return (
+        session.entities.find_one(
+            {
+                "message_row_id": message_row_id,
+                "entity_type": entity_type,
+                "entity_value": entity_value,
+            },
+            {"_id": 1},
+        )
+        is not None
     )
-    return session.scalar(stmt) is not None
 
 
 def store_entities_for_message(
-    session: Session,
+    session: MongoSession,
     message_row_id: int,
     text: str | None,
     extractors: tuple[BaseEntityExtractor, ...] | None = None,
@@ -211,7 +273,7 @@ def store_entities_for_message(
             skipped += 1
             continue
 
-        session.add(
+        session.insert_entity(
             ExtractedEntity(
                 message_row_id=message_row_id,
                 entity_type=match.entity_type,
@@ -223,7 +285,6 @@ def store_entities_for_message(
         stored += 1
 
     if stored:
-        session.flush()
         logger.debug(
             "Stored %d content entities for message_row_id=%s",
             stored,
@@ -243,11 +304,10 @@ def extract_for_all_messages(settings: Settings | None = None) -> ExtractionResu
     entities_skipped = 0
 
     with get_session(cfg) as session:
-        messages = session.scalars(select(Message).order_by(Message.id)).all()
-        for message in messages:
+        for message in session.list_messages():
             stored, skipped = store_entities_for_message(
                 session,
-                message.id,
+                message.id or 0,
                 message.text,
             )
             messages_processed += 1

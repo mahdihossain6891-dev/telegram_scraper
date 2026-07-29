@@ -5,6 +5,11 @@ import { NextResponse } from "next/server";
 import samplePayload from "@/data/export.sample.json";
 import type { ExportPayload } from "@/lib/types";
 
+type DataResponse = {
+  source: string;
+  payload: ExportPayload;
+};
+
 async function readExport(relativePath: string): Promise<ExportPayload | null> {
   try {
     const filePath = path.join(process.cwd(), relativePath);
@@ -31,7 +36,26 @@ async function fetchPublicExport(
   }
 }
 
+async function fetchLiveApi(): Promise<DataResponse | null> {
+  const base =
+    process.env.DASHBOARD_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:8510";
+  try {
+    const response = await fetch(`${base}/api/data`, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as DataResponse;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
+  const liveApi = await fetchLiveApi();
+  if (liveApi?.payload) {
+    return NextResponse.json(liveApi);
+  }
+
   const exportUrl = process.env.EXPORT_JSON_URL;
   if (exportUrl) {
     try {
@@ -62,7 +86,10 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json(
-    { error: "No export data found. Run export.bat and copy export.json to web/public/data/." },
+    {
+      error:
+        "No export data found. Start the FastAPI API (dashboard.bat) or run export.bat and copy export.json to web/public/data/.",
+    },
     { status: 404 },
   );
 }

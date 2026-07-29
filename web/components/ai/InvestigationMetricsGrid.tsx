@@ -9,10 +9,14 @@ import {
 import type { AiRetrieved } from "@/components/ai/types";
 import { riskBandClass, riskBandFromScore } from "@/lib/risk-bands";
 
+type Focus = "risk" | "behavior" | "alerts" | "network" | "report" | "general";
+
 type Props = {
   report: ThreatReport | null;
   retrieved?: AiRetrieved[];
   confidence?: string;
+  /** Emphasize metrics relevant to the active investigation type. */
+  focus?: Focus;
 };
 
 function toneForBand(band: string): "success" | "warning" | "accent" | "danger" | "neutral" {
@@ -24,14 +28,35 @@ function toneForBand(band: string): "success" | "warning" | "accent" | "danger" 
   return "neutral";
 }
 
-export function InvestigationMetricsGrid({ report, retrieved, confidence }: Props) {
+const FOCUS_LABELS: Record<Focus, string[]> = {
+  risk: ["Risk Score", "Threat Category", "Confidence", "Evidence Count"],
+  behavior: ["Behavior Score", "Risk Score", "Confidence", "Evidence Count"],
+  alerts: ["Risk Score", "Threat Category", "Evidence Count", "Confidence"],
+  network: ["Network Score", "Risk Score", "Evidence Count", "Confidence"],
+  report: ["Risk Score", "Threat Category", "Confidence", "Evidence Count"],
+  general: [
+    "Risk Score",
+    "Threat Category",
+    "Confidence",
+    "Evidence Count",
+    "Behavior Score",
+    "Network Score",
+  ],
+};
+
+export function InvestigationMetricsGrid({
+  report,
+  retrieved,
+  confidence,
+  focus = "general",
+}: Props) {
   const risk = report?.risk_scores;
   const band = risk?.risk_band || riskBandFromScore(risk?.final_score);
   const confPct = report?.confidence_level?.score_pct;
   const confLabel =
     report?.confidence_level?.label || confidence || "—";
 
-  const cards = [
+  const allCards = [
     {
       label: "Risk Score",
       value: risk?.final_score ?? "—",
@@ -76,9 +101,14 @@ export function InvestigationMetricsGrid({ report, retrieved, confidence }: Prop
     },
   ];
 
+  const allow = new Set(FOCUS_LABELS[focus] || FOCUS_LABELS.general);
+  const cards = allCards.filter((card) => allow.has(card.label));
+
   return (
-    <section className="investigation-metrics-grid" aria-label="Investigation metrics">
-      {cards.map((card) => (
+    <section
+      className="investigation-metrics-grid"
+      aria-label={`${focus} investigation metrics`}
+    >      {cards.map((card) => (
         <StatCard
           key={card.label}
           label={card.label}

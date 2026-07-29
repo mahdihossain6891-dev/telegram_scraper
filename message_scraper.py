@@ -1,12 +1,12 @@
-"""Collect flagged messages from a selected chat and store them in SQLite."""
+"""Collect flagged messages from a selected chat and store them in MongoDB."""
 
 from __future__ import annotations
 
 import asyncio
 import sys
 from dataclasses import dataclass
+from typing import Callable
 
-from sqlalchemy.orm import Session
 from telethon import TelegramClient, utils
 from telethon.errors import RPCError
 from telethon.tl.types import Message as TelethonMessage
@@ -22,10 +22,14 @@ from chat_discovery import (
     prompt_for_selection,
 )
 from config import Settings, ensure_directories, load_settings
-from database import get_session, init_db, message_exists
+from database import MongoSession, get_session, init_db, message_exists
 from entity_extractor import store_entities_for_message
 from keyword_filter import KeywordScanResult, scan_message_text
 from models import Chat, ExtractedEntity, Message, User
+from personnel import record_user_activity, refresh_chat_risk
+from risk_scoring import score_message
+from entity_extractor import collect_alert_addresses
+from telegram_alerts import AlertMessage, maybe_alert_after_scrape
 from telegram_client import TelegramAuthError, TelegramClientManager
 from utils import get_logger, setup_logging
 
@@ -181,43 +185,24 @@ def parse_telethon_message(message: TelethonMessage, chat_id: int) -> ParsedMess
     )
 
 
-def ensure_chat_record(session: Session, chat: DiscoveredChat) -> Chat:
+def ensure_chat_record(session: MongoSession, chat: DiscoveredChat) -> Chat:
     """Insert the chat metadata if it is not already stored."""
-    existing = session.get(Chat, chat.chat_id)
-    if existing is not None:
-        existing.title = chat.name
-        existing.username = chat.username
-        existing.chat_type = chat.chat_type
-        return existing
-
-    record = Chat(
-        id=chat.chat_id,
-        title=chat.name,
-        username=chat.username,
-        chat_type=chat.chat_type,
+    return session.upsert_chat(
+        Chat(
+            id=chat.chat_id,
+            title=chat.name,
+            username=chat.username,
+            chat_type=chat.chat_type,
+        )
     )
-    session.add(record)
-    session.flush()
-    logger.debug("Stored chat metadata for id=%s name=%r", chat.chat_id, chat.name)
-    return record
 
 
-def ensure_user_record(session: Session, parsed: ParsedMessage) -> None:
+def ensure_user_record(session: MongoSession, parsed: ParsedMessage) -> None:
     """Insert or update a sender record when sender information is available."""
     if parsed.sender_id is None:
         return
 
-    existing = session.get(User, parsed.sender_id)
-    if existing is not None:
-        if parsed.sender_username is not None:
-            existing.username = parsed.sender_username
-        if parsed.sender_first_name is not None:
-            existing.first_name = parsed.sender_first_name
-        if parsed.sender_last_name is not None:
-            existing.last_name = parsed.sender_last_name
-        return
-
-    session.add(
+    session.upsert_user(
         User(
             id=parsed.sender_id,
             username=parsed.sender_username,
@@ -225,11 +210,10 @@ def ensure_user_record(session: Session, parsed: ParsedMessage) -> None:
             last_name=parsed.sender_last_name,
         )
     )
-    session.flush()
 
 
 def store_parsed_message(
-    session: Session,
+    session: MongoSession,
     parsed: ParsedMessage,
     keyword_scan: KeywordScanResult,
 ) -> bool:
@@ -241,25 +225,35 @@ def store_parsed_message(
         return False
 
     ensure_user_record(session, parsed)
-    record = Message(
-        message_id=parsed.message_id,
-        chat_id=parsed.chat_id,
-        sender_id=parsed.sender_id,
-        timestamp=parsed.timestamp,
+    keywords = [hit.keyword for hit in keyword_scan.hits]
+    categories = [str(c) for c in keyword_scan.categories]
+    risk = score_message(
+        keywords=keywords,
+        categories=categories,
         text=parsed.text,
-        media_type=parsed.media_type,
-        reply_to_message_id=parsed.reply_to_message_id,
-        forward_from_chat_id=parsed.forward_from_chat_id,
-        forward_from_message_id=parsed.forward_from_message_id,
-        views=parsed.views,
     )
-    session.add(record)
-    session.flush()
+    record = session.insert_message(
+        Message(
+            message_id=parsed.message_id,
+            chat_id=parsed.chat_id,
+            sender_id=parsed.sender_id,
+            timestamp=parsed.timestamp,
+            text=parsed.text,
+            media_type=parsed.media_type,
+            reply_to_message_id=parsed.reply_to_message_id,
+            forward_from_chat_id=parsed.forward_from_chat_id,
+            forward_from_message_id=parsed.forward_from_message_id,
+            views=parsed.views,
+            risk_score=risk.score,
+            risk_level=risk.level,
+            risk_factors=list(risk.factors),
+        )
+    )
 
     for hit in keyword_scan.hits:
-        session.add(
+        session.insert_entity(
             ExtractedEntity(
-                message_row_id=record.id,
+                message_row_id=record.id or 0,
                 entity_type=hit.category,
                 entity_value=hit.keyword,
             )
@@ -267,19 +261,35 @@ def store_parsed_message(
 
     content_stored, _content_skipped = store_entities_for_message(
         session,
-        record.id,
+        record.id or 0,
         parsed.text,
     )
 
+    if parsed.sender_id is not None:
+        record_user_activity(
+            session,
+            user_id=parsed.sender_id,
+            chat_id=parsed.chat_id,
+            timestamp=parsed.timestamp,
+            keywords=keywords,
+            categories=categories,
+            username=parsed.sender_username,
+            first_name=parsed.sender_first_name,
+            last_name=parsed.sender_last_name,
+            message_risk_score=risk.score,
+        )
+    refresh_chat_risk(session, parsed.chat_id)
+
     logger.info(
-        "Flagged message_id=%s chat_id=%s categories=%s keywords=%s content_entities=%d",
+        "Flagged message_id=%s chat_id=%s categories=%s keywords=%s risk=%s/%s content_entities=%d",
         parsed.message_id,
         parsed.chat_id,
-        ",".join(keyword_scan.categories),
-        ",".join(hit.keyword for hit in keyword_scan.hits),
+        ",".join(categories),
+        ",".join(keywords),
+        risk.score,
+        risk.level,
         content_stored,
     )
-    session.flush()
     return True
 
 
@@ -322,6 +332,7 @@ class MessageScraper:
         skipped_no_keyword = 0
         processed = 0
         pending: list[TelethonMessage] = []
+        alert_items: list[AlertMessage] = []
 
         try:
             async for message in self.client.iter_messages(chat.chat_id, limit=limit):
@@ -330,10 +341,13 @@ class MessageScraper:
 
                 pending.append(message)
                 if len(pending) >= self.batch_size:
-                    batch_flagged, batch_dupes, batch_no_keyword = self._store_batch(chat, pending)
+                    batch_flagged, batch_dupes, batch_no_keyword, batch_alerts = self._store_batch(
+                        chat, pending
+                    )
                     flagged_stored += batch_flagged
                     skipped_duplicates += batch_dupes
                     skipped_no_keyword += batch_no_keyword
+                    alert_items.extend(batch_alerts)
                     processed += len(pending)
                     pending.clear()
                     logger.info(
@@ -346,10 +360,13 @@ class MessageScraper:
                     )
 
             if pending:
-                batch_flagged, batch_dupes, batch_no_keyword = self._store_batch(chat, pending)
+                batch_flagged, batch_dupes, batch_no_keyword, batch_alerts = self._store_batch(
+                    chat, pending
+                )
                 flagged_stored += batch_flagged
                 skipped_duplicates += batch_dupes
                 skipped_no_keyword += batch_no_keyword
+                alert_items.extend(batch_alerts)
                 processed += len(pending)
         except RPCError as exc:
             logger.error("Telegram API error during message collection: %s", exc)
@@ -357,6 +374,9 @@ class MessageScraper:
         except Exception as exc:
             logger.error("Unexpected error during message collection: %s", exc)
             raise MessageScrapeError(f"Failed to collect messages: {exc}") from exc
+
+        if alert_items:
+            maybe_alert_after_scrape(alert_items, chat_name=chat.name)
 
         result = ScrapeResult(
             chat_id=chat.chat_id,
@@ -381,12 +401,13 @@ class MessageScraper:
         self,
         chat: DiscoveredChat,
         messages: list[TelethonMessage],
-    ) -> tuple[int, int, int]:
+    ) -> tuple[int, int, int, list[AlertMessage]]:
         """Persist keyword-flagged messages from a batch."""
         flagged_stored = 0
         skipped_duplicates = 0
         skipped_no_keyword = 0
         chat_record_created = False
+        alert_items: list[AlertMessage] = []
 
         with get_session(self.settings) as session:
             for message in messages:
@@ -407,8 +428,31 @@ class MessageScraper:
 
                 if store_parsed_message(session, parsed, keyword_scan):
                     flagged_stored += 1
+                    sender_parts = [
+                        p
+                        for p in (parsed.sender_first_name, parsed.sender_last_name)
+                        if p
+                    ]
+                    sender = (
+                        " ".join(sender_parts)
+                        or (f"@{parsed.sender_username}" if parsed.sender_username else None)
+                        or (f"User {parsed.sender_id}" if parsed.sender_id else "unknown")
+                    )
+                    alert_items.append(
+                        AlertMessage(
+                            chat_name=chat.name,
+                            message_id=parsed.message_id,
+                            sender=sender,
+                            text=parsed.text or "",
+                            categories=tuple(str(c) for c in keyword_scan.categories),
+                            keywords=tuple(hit.keyword for hit in keyword_scan.hits),
+                            timestamp=parsed.timestamp.isoformat() if parsed.timestamp else None,
+                            addresses=collect_alert_addresses(parsed.text),
+                            alert_key=f"{parsed.chat_id}:{parsed.message_id}",
+                        )
+                    )
 
-        return flagged_stored, skipped_duplicates, skipped_no_keyword
+        return flagged_stored, skipped_duplicates, skipped_no_keyword, alert_items
 
     async def scrape_chats(
         self,
@@ -416,6 +460,7 @@ class MessageScraper:
         limit: int,
         *,
         scope: str = "all",
+        on_progress: Callable[[ScrapeResult, int, int], None] | None = None,
     ) -> MultiScrapeResult:
         """Collect flagged messages from every chat in the provided list."""
         limit = normalize_limit(limit)
@@ -460,6 +505,8 @@ class MessageScraper:
                     f"no keyword {result.skipped_no_keyword}, duplicates {result.skipped_duplicates}"
                 )
             results.append(result)
+            if on_progress:
+                on_progress(result, index, len(chats))
 
         return MultiScrapeResult(
             scope=scope,

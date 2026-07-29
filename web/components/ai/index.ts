@@ -8,6 +8,7 @@ export { QuickActions } from "./QuickActions";
 export { InvestigationResultCard } from "./InvestigationResultCard";
 export { EvidencePanel } from "./EvidencePanel";
 export { SuggestedActions } from "./SuggestedActions";
+export { ActionBriefPanel } from "./ActionBriefPanel";
 export { EmptyState } from "./EmptyState";
 export { SavedCasesPanel } from "./SavedCasesPanel";
 export { EntitySelectionPanel, EntityNoMatchPanel } from "./EntitySelectionPanel";

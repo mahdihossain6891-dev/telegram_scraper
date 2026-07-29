@@ -237,6 +237,12 @@ export const QUICK_ACTIONS: {
   id: string;
   label: string;
   placeholder: string;
+  /** Short line shown on suggestion cards / action brief. */
+  description: string;
+  /** What the analyst should enter next. */
+  targetHint: string;
+  /** Result UI emphasis. */
+  focus: "risk" | "behavior" | "alerts" | "network" | "report";
   /** Template used only after a target is entered. `{target}` is replaced. */
   queryTemplate: string;
 }[] = [
@@ -244,6 +250,9 @@ export const QUICK_ACTIONS: {
     id: "investigate_user",
     label: "Investigate User",
     placeholder: "Enter a username, display name, or Telegram ID...",
+    description: "Full risk, activity, and evidence dossier for one subject.",
+    targetHint: "Enter @username, display name, or Telegram ID",
+    focus: "risk",
     queryTemplate:
       "Investigate {target} and summarize risk, activity patterns, and notable evidence.",
   },
@@ -251,30 +260,46 @@ export const QUICK_ACTIONS: {
     id: "analyze_behavior",
     label: "Analyze Behavior",
     placeholder: "Select a user to analyze behavioral activity...",
+    description: "Timing spikes, night activity, forwarding, and anomaly signals.",
+    targetHint: "Select a monitored user to analyze behavior",
+    focus: "behavior",
     queryTemplate:
-      "Analyze behavioral anomalies and unusual activity patterns for {target}.",
+      "Analyze behavioral anomalies and unusual activity patterns for {target}. Focus on behavior score, timing, and anomalies — not a full risk dossier.",
   },
   {
     id: "explain_alert",
     label: "Explain Alert",
     placeholder: "Search for an alert ID or user...",
+    description: "Why an alert fired, severity, and supporting messages.",
+    targetHint: "Enter an alert ID or the user tied to the alert",
+    focus: "alerts",
     queryTemplate:
-      "Explain this alert for {target}: what triggered it, supporting evidence, and severity.",
+      "Explain recent alerts for {target}: what triggered them, supporting evidence, and severity. Focus on alert context only.",
   },
   {
     id: "related_users",
     label: "Find Related Users",
     placeholder: "Enter a username, display name, or Telegram ID...",
+    description: "Shared chats, wallets, and relationship edges around a subject.",
+    targetHint: "Enter the seed user to expand their network",
+    focus: "network",
     queryTemplate:
-      "Find related users connected to {target} through shared groups, wallets, or similar activity.",
+      "Find related users connected to {target} through shared groups, wallets, or similar activity. Focus on network links, not a full risk report.",
   },
   {
     id: "generate_report",
     label: "Generate Report",
     placeholder: "Select a completed investigation...",
+    description: "Structured intelligence summary ready for export.",
+    targetHint: "Enter a subject ID from a completed investigation",
+    focus: "report",
     queryTemplate: "Generate a concise investigation summary for {target}.",
   },
 ];
+
+export function getQuickAction(actionId: string | null | undefined) {
+  return QUICK_ACTIONS.find((a) => a.id === actionId) || null;
+}
 
 export const DEFAULT_SEARCH_PLACEHOLDER =
   "Investigate a user, group, message, wallet, phone number, or suspicious activity...";
@@ -283,41 +308,110 @@ export const SUGGESTED_PROMPTS: {
   id: string;
   label: string;
   actionId: string;
+  description: string;
 }[] = [
-  { id: "s1", label: "Why is this user high risk?", actionId: "investigate_user" },
-  { id: "s2", label: "Explain this alert", actionId: "explain_alert" },
-  { id: "s3", label: "Show behavioral anomalies", actionId: "analyze_behavior" },
-  { id: "s4", label: "Generate investigation summary", actionId: "generate_report" },
-  { id: "s5", label: "Find related users", actionId: "related_users" },
+  {
+    id: "s1",
+    label: "Why is this user high risk?",
+    actionId: "investigate_user",
+    description: "Risk score, factors, and key evidence",
+  },
+  {
+    id: "s2",
+    label: "Explain this alert",
+    actionId: "explain_alert",
+    description: "Trigger, severity, and supporting messages",
+  },
+  {
+    id: "s3",
+    label: "Show behavioral anomalies",
+    actionId: "analyze_behavior",
+    description: "Behavior score, timing, and outliers",
+  },
+  {
+    id: "s4",
+    label: "Generate investigation summary",
+    actionId: "generate_report",
+    description: "Executive brief with citations",
+  },
+  {
+    id: "s5",
+    label: "Find related users",
+    actionId: "related_users",
+    description: "Network edges and shared activity",
+  },
 ];
 
-export const SUGGESTED_NEXT_STEPS: { id: string; label: string; prompt: string }[] = [
+export const SUGGESTED_NEXT_STEPS: {
+  id: string;
+  label: string;
+  description: string;
+  actionId: string;
+  prompt: string;
+}[] = [
   {
     id: "connected",
     label: "Investigate connected users",
-    prompt: "Investigate connected users linked to this subject from the evidence.",
+    description: "Expand relationship edges from this subject",
+    actionId: "related_users",
+    prompt:
+      "Find related users connected to this subject through shared groups, wallets, or similar activity. Focus on network links.",
   },
   {
     id: "anomalies",
     label: "Analyze behavioral anomalies",
-    prompt: "Deep-dive into behavioral anomalies and timing patterns.",
+    description: "Deep-dive timing and behavior signals",
+    actionId: "analyze_behavior",
+    prompt:
+      "Analyze behavioral anomalies and unusual activity patterns for this subject. Focus on behavior score, timing, and anomalies.",
   },
   {
     id: "intel_report",
     label: "Generate intelligence report",
-    prompt: "Produce a structured intelligence report with executive summary and citations.",
+    description: "Structured summary with citations",
+    actionId: "generate_report",
+    prompt:
+      "Produce a structured intelligence report with executive summary and citations for this subject.",
   },
   {
     id: "graph",
     label: "View relationship graph",
-    prompt: "Describe relationship connections between this subject and related entities.",
+    description: "Describe network connections only",
+    actionId: "related_users",
+    prompt:
+      "Describe relationship connections between this subject and related entities. Focus on network analysis.",
   },
   {
     id: "similar",
     label: "Search similar activity",
-    prompt: "Search for similar activity or messages across indexed evidence.",
+    description: "Find similar flagged messages in evidence",
+    actionId: "investigate_user",
+    prompt:
+      "Search for similar activity or messages across indexed evidence for this subject.",
   },
 ];
+
+/** Map backend intent keys → UI focus for result layout. */
+export function intentFocus(
+  intent?: string | null,
+): "risk" | "behavior" | "alerts" | "network" | "report" | "general" {
+  const key = (intent || "").toLowerCase();
+  if (key.includes("behavior") || key.includes("anomal")) return "behavior";
+  if (key.includes("alert")) return "alerts";
+  if (
+    key.includes("relationship") ||
+    key.includes("related") ||
+    key.includes("network") ||
+    key.includes("graph")
+  ) {
+    return "network";
+  }
+  if (key.includes("report") || key.includes("summary")) return "report";
+  if (key.includes("investigate") || key.includes("risk") || key.includes("user")) {
+    return "risk";
+  }
+  return "general";
+}
 
 export const SECTION_META: {
   id: InvestigationSectionId;

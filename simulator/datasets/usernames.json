@@ -1,0 +1,13 @@
+{
+  "roots": [
+    "dev", "coder", "tech", "cyber", "crypto", "trader", "photo", "travel", "foodie",
+    "gamer", "music", "bookworm", "news", "market", "ai_fan", "science", "fit",
+    "student", "teacher", "creator", "mod", "casual", "nightowl", "morning", "lurker",
+    "builder", "hacker", "design", "cloud", "data", "ml_ops", "sec_ops", "pentest",
+    "blockchain", "startup", "biz", "finance", "journal", "writer", "stream", "vlog"
+  ],
+  "suffixes": [
+    "hq", "lab", "hub", "zone", "pro", "x", "io", "99", "42", "007", "bd", "my",
+    "official", "daily", "live", "real", "bot", "dev", "ops", "fan", "guy", "gal"
+  ]
+}

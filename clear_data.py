@@ -8,11 +8,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from sqlalchemy import delete, func, select
-
 from config import Settings, ensure_directories, load_settings
 from database import get_session, init_db, reset_engine_cache
-from models import Chat, ExtractedEntity, Message
 from utils import get_logger, setup_logging
 
 logger = get_logger("clear_data")
@@ -86,64 +83,52 @@ def remove_private_chats(settings: Settings | None = None) -> tuple[int, int, in
     init_db(cfg)
 
     with get_session(cfg) as session:
-        private_chat_ids = list(
-            session.scalars(
-                select(Chat.id).where(Chat.chat_type == PRIVATE_CHAT_TYPE)
-            ).all()
-        )
-        if not private_chat_ids:
+        result = session.delete_private_chats()
+        if result["chats"] == 0:
             logger.info("No private chats found in database")
             return 0, 0, 0
-
-        message_count = int(
-            session.scalar(
-                select(func.count())
-                .select_from(Message)
-                .where(Message.chat_id.in_(private_chat_ids))
-            )
-            or 0
-        )
-        entity_count = int(
-            session.scalar(
-                select(func.count())
-                .select_from(ExtractedEntity)
-                .where(
-                    ExtractedEntity.message_row_id.in_(
-                        select(Message.id).where(Message.chat_id.in_(private_chat_ids))
-                    )
-                )
-            )
-            or 0
-        )
-
-        session.execute(delete(Chat).where(Chat.id.in_(private_chat_ids)))
-        session.flush()
-
         logger.info(
             "Removed private chats=%d messages=%d entities=%d",
-            len(private_chat_ids),
-            message_count,
-            entity_count,
+            result["chats"],
+            result["messages"],
+            result["entities"],
         )
-        return len(private_chat_ids), message_count, entity_count
+        return result["chats"], result["messages"], result["entities"]
 
 
 def clear_runtime_files(settings: Settings | None = None) -> tuple[str, ...]:
-    """Delete session files, database, logs, and exports."""
+    """Delete session files, logs, and exports; drop Mongo collections."""
     cfg = ensure_directories(settings)
     _release_open_resources()
 
     targets = [
         cfg.session_path.with_suffix(".session"),
         cfg.session_path.with_suffix(".session-journal"),
-        cfg.database_path,
-        Path(f"{cfg.database_path}-journal"),
-        cfg.database_path.with_suffix(".db-journal"),
         cfg.log_file,
     ]
 
     removed: list[str] = []
     for path in targets:
+        if _delete_if_exists(path):
+            removed.append(str(path))
+
+    # Drop MongoDB application data
+    try:
+        init_db(cfg)
+        with get_session(cfg) as session:
+            session.drop_all_data()
+        removed.append("mongodb://collections (chats, users, messages, entities, counters)")
+    except Exception as exc:
+        print(f"Warning: could not clear MongoDB data: {exc}", file=sys.stderr)
+
+    # Remove legacy SQLite files if present
+    legacy_db = cfg.data_dir / "telegram_scraper.db"
+    for path in (
+        legacy_db,
+        Path(f"{legacy_db}-journal"),
+        legacy_db.with_suffix(".db-journal"),
+        cfg.data_dir / "test.db",
+    ):
         if _delete_if_exists(path):
             removed.append(str(path))
 
@@ -154,7 +139,7 @@ def clear_runtime_files(settings: Settings | None = None) -> tuple[str, ...]:
 
     removed.extend(_clear_directory_contents(cfg.exports_dir))
 
-    print(f"Cleared {len(removed)} runtime file(s)")
+    print(f"Cleared {len(removed)} runtime item(s)")
     return tuple(removed)
 
 
@@ -276,9 +261,9 @@ def main() -> None:
     if not args.yes:
         print("\nCleanup plan:")
         if private_chats:
-            print("  - Remove private chats from SQLite")
+            print("  - Remove private chats from MongoDB")
         if runtime:
-            print("  - Delete Telegram session, database, logs, and exports")
+            print("  - Delete Telegram session, logs, exports, and MongoDB collections")
             print("  - Clear TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE from .env")
         if not _prompt_yes_no("\nProceed?"):
             print("Cancelled.")

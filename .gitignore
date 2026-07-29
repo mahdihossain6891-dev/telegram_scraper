@@ -20,6 +20,7 @@ env/
 # Database
 data/*.db
 data/*.db-journal
+data/console_mode.json
 
 # Logs
 logs/*.log
@@ -40,11 +41,11 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Vercel web dashboard
+# Next.js dashboard
 web/node_modules/
 web/.next/
+web/.env.local
 web/public/data/export.json
 
-# Streamlit Cloud
-.streamlit/secrets.toml
+# Optional local export copies
 demo/export.json

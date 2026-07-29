@@ -13,51 +13,54 @@ def _seed_analytics_data(db_settings) -> tuple:
     base = datetime(2026, 1, 15, 10, 0, tzinfo=timezone.utc)
 
     with db_module.get_session(settings) as session:
-        chat_a = Chat(id=100, title="Alpha Channel", chat_type="channel")
-        chat_b = Chat(id=200, title="Beta Group", chat_type="supergroup")
-        sender = User(id=300, username="alice", first_name="Alice")
-        session.add_all([chat_a, chat_b, sender])
-        session.flush()
+        session.upsert_chat(Chat(id=100, title="Alpha Channel", chat_type="channel"))
+        session.upsert_chat(Chat(id=200, title="Beta Group", chat_type="supergroup"))
+        session.upsert_user(User(id=300, username="alice", first_name="Alice"))
 
         messages = [
-            Message(
-                message_id=1,
-                chat_id=100,
-                sender_id=300,
-                timestamp=base,
-                text="cocaine shipment via https://alpha.example contact ops@alpha.example #alert",
+            session.insert_message(
+                Message(
+                    message_id=1,
+                    chat_id=100,
+                    sender_id=300,
+                    timestamp=base,
+                    text="cocaine shipment via https://alpha.example contact ops@alpha.example #alert",
+                )
             ),
-            Message(
-                message_id=2,
-                chat_id=100,
-                sender_id=300,
-                timestamp=base.replace(hour=14),
-                text="ghost gun discussion https://alpha.example again #alert",
+            session.insert_message(
+                Message(
+                    message_id=2,
+                    chat_id=100,
+                    sender_id=300,
+                    timestamp=base.replace(hour=14),
+                    text="ghost gun discussion https://alpha.example again #alert",
+                )
             ),
-            Message(
-                message_id=3,
-                chat_id=200,
-                sender_id=300,
-                timestamp=base.replace(day=16, hour=9),
-                text="human trafficking report https://beta.example #review",
+            session.insert_message(
+                Message(
+                    message_id=3,
+                    chat_id=200,
+                    sender_id=300,
+                    timestamp=base.replace(day=16, hour=9),
+                    text="human trafficking report https://beta.example #review",
+                )
             ),
         ]
-        session.add_all(messages)
-        session.flush()
 
         entities = [
-            ExtractedEntity(message_row_id=messages[0].id, entity_type="narcotics", entity_value="cocaine"),
-            ExtractedEntity(message_row_id=messages[0].id, entity_type="domain", entity_value="alpha.example"),
-            ExtractedEntity(message_row_id=messages[0].id, entity_type="hashtag", entity_value="#alert"),
-            ExtractedEntity(message_row_id=messages[0].id, entity_type="email", entity_value="ops@alpha.example"),
-            ExtractedEntity(message_row_id=messages[1].id, entity_type="firearms", entity_value="ghost gun"),
-            ExtractedEntity(message_row_id=messages[1].id, entity_type="domain", entity_value="alpha.example"),
-            ExtractedEntity(message_row_id=messages[1].id, entity_type="hashtag", entity_value="#alert"),
-            ExtractedEntity(message_row_id=messages[2].id, entity_type="human_trafficking", entity_value="human trafficking"),
-            ExtractedEntity(message_row_id=messages[2].id, entity_type="domain", entity_value="beta.example"),
-            ExtractedEntity(message_row_id=messages[2].id, entity_type="hashtag", entity_value="#review"),
+            ExtractedEntity(message_row_id=messages[0].id or 0, entity_type="narcotics", entity_value="cocaine"),
+            ExtractedEntity(message_row_id=messages[0].id or 0, entity_type="domain", entity_value="alpha.example"),
+            ExtractedEntity(message_row_id=messages[0].id or 0, entity_type="hashtag", entity_value="#alert"),
+            ExtractedEntity(message_row_id=messages[0].id or 0, entity_type="email", entity_value="ops@alpha.example"),
+            ExtractedEntity(message_row_id=messages[1].id or 0, entity_type="firearms", entity_value="ghost gun"),
+            ExtractedEntity(message_row_id=messages[1].id or 0, entity_type="domain", entity_value="alpha.example"),
+            ExtractedEntity(message_row_id=messages[1].id or 0, entity_type="hashtag", entity_value="#alert"),
+            ExtractedEntity(message_row_id=messages[2].id or 0, entity_type="human_trafficking", entity_value="human trafficking"),
+            ExtractedEntity(message_row_id=messages[2].id or 0, entity_type="domain", entity_value="beta.example"),
+            ExtractedEntity(message_row_id=messages[2].id or 0, entity_type="hashtag", entity_value="#review"),
         ]
-        session.add_all(entities)
+        for entity in entities:
+            session.insert_entity(entity)
 
     return settings, db_module
 

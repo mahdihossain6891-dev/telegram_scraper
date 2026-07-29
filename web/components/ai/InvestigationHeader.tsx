@@ -45,20 +45,11 @@ export function InvestigationHeader({
 
   return (
     <header className="ai-header ba-header console-top-header">
-      <div>
+      <div className="ai-header-brand">
         <h1>Sébastien</h1>
-        <p className="ai-tagline">AI Investigation Copilot</p>
-        <div className="ai-header-meta" aria-label="Active model context">
-          <span>
-            Provider: <strong>{providerLabel || "—"}</strong>
-          </span>
-          <span>
-            Model: <strong>{modelLabel || "—"}</strong>
-          </span>
-          <span>
-            Status: <strong>{status}</strong>
-          </span>
-        </div>
+        <p className="ai-tagline">Investigation copilot</p>
+      </div>
+      <div className="ai-header-controls">
         <AiModelPicker compact />
         <ModeToggle />
       </div>
@@ -67,14 +58,17 @@ export function InvestigationHeader({
           <span className="system-status-dot" aria-hidden="true" />
           {status}
         </span>
-        <span className="status-pill ai-status-chip muted" title="Current AI model">
-          {modelLabel}
+        <span className="status-pill ai-status-chip muted" title={`${providerLabel} · ${modelLabel}`}>
+          {modelLabel || providerLabel || "—"}
         </span>
         <span className="status-pill ai-status-chip muted" title="Last response time">
           {formatLatency(latencyMs)}
         </span>
         {confidence ? (
           <span className={confidenceClass(confidence)}>Confidence: {confidence}</span>
+        ) : null}
+        {health?.vector_backend ? (
+          <span className="caption ai-status-backend">{health.vector_backend}</span>
         ) : null}
         <button type="button" className="btn ai-btn-ghost ai-status-refresh" onClick={onRefresh}>
           Refresh
@@ -87,9 +81,6 @@ export function InvestigationHeader({
         >
           Settings
         </button>
-        {health?.vector_backend ? (
-          <span className="caption ai-status-backend">{health.vector_backend}</span>
-        ) : null}
       </div>
     </header>
   );

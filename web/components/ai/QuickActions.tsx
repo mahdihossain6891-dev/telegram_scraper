@@ -19,9 +19,11 @@ export function QuickActions({ busy, activeActionId, onAction }: Props) {
             activeActionId === action.id ? "ai-quick-btn active" : "ai-quick-btn"
           }
           disabled={busy}
+          title={action.description}
+          aria-pressed={activeActionId === action.id}
           onClick={() => onAction(action.id)}
         >
-          {action.label}
+          <span className="ai-quick-btn-label">{action.label}</span>
         </button>
       ))}
     </div>

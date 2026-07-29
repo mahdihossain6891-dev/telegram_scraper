@@ -1,0 +1,40 @@
+{
+  "supported": [
+  {
+    "code": "english",
+    "label": "English",
+    "countries": ["United States", "United Kingdom", "Singapore"],
+    "writing_styles": ["formal", "casual", "professional", "technical", "verbose"]
+  },
+  {
+    "code": "bengali",
+    "label": "Bengali",
+    "countries": ["Bangladesh", "India"],
+    "writing_styles": ["casual", "mixes_english_bengali", "emoji_heavy", "very_short"]
+  },
+  {
+    "code": "hindi",
+    "label": "Hindi",
+    "countries": ["India"],
+    "writing_styles": ["casual", "mixes_english_hindi", "emoji_heavy", "uses_slang"]
+  },
+  {
+    "code": "urdu",
+    "label": "Urdu",
+    "countries": ["Pakistan"],
+    "writing_styles": ["formal", "casual", "mixes_english_urdu"]
+  },
+  {
+    "code": "arabic",
+    "label": "Arabic",
+    "countries": ["United Arab Emirates"],
+    "writing_styles": ["formal", "professional", "emoji_free"]
+  },
+  {
+    "code": "malay",
+    "label": "Malay",
+    "countries": ["Malaysia", "Singapore"],
+    "writing_styles": ["casual", "mixes_english_malay", "emoji_heavy"]
+  }
+  ]
+}

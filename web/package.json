@@ -9,17 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "echarts": "^6.1.0",
+    "echarts-for-react": "^3.0.6",
     "next": "^15.2.0",
-    "plotly.js-dist-min": "^2.35.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-plotly.js": "^2.6.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/react-plotly.js": "^2.6.3",
     "typescript": "^5.7.0"
   }
 }

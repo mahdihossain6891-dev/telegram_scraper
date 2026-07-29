@@ -32,7 +32,6 @@ class AutoUpdateConfig:
     interval_seconds: int
     scrape_limit: int
     post_bot_messages: bool
-    sync_streamlit: bool
     sync_vercel: bool
     git_push: bool
 
@@ -60,7 +59,6 @@ def load_auto_update_config() -> AutoUpdateConfig:
         interval_seconds=max(60, interval_minutes * 60),
         scrape_limit=scrape_limit if scrape_limit in (100, 500, 1000) else 1000,
         post_bot_messages=_env_bool("AUTO_UPDATE_BOT_POST", False),
-        sync_streamlit=_env_bool("AUTO_UPDATE_SYNC_STREAMLIT", True),
         sync_vercel=_env_bool("AUTO_UPDATE_SYNC_VERCEL", True),
         git_push=_env_bool("AUTO_UPDATE_GIT_PUSH", False),
     )
@@ -88,7 +86,7 @@ def post_bot_demo_messages() -> int:
 
 
 def copy_export(settings: Settings, config: AutoUpdateConfig) -> None:
-    """Export SQLite data and copy JSON to dashboard folders."""
+    """Export MongoDB data and copy JSON to the Next.js public folder."""
     result = run_export(settings)
     logger.info(
         "Exported %s messages, %s chats, %s entities",
@@ -101,12 +99,6 @@ def copy_export(settings: Settings, config: AutoUpdateConfig) -> None:
     if not source.is_file():
         raise FileNotFoundError(f"Missing export file: {source}")
 
-    if config.sync_streamlit:
-        demo_dir = PROJECT_ROOT / "demo"
-        demo_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, demo_dir / "export.json")
-        logger.info("Copied export to demo/export.json")
-
     if config.sync_vercel:
         vercel_dir = PROJECT_ROOT / "web" / "public" / "data"
         vercel_dir.mkdir(parents=True, exist_ok=True)
@@ -115,9 +107,9 @@ def copy_export(settings: Settings, config: AutoUpdateConfig) -> None:
 
 
 def git_push_exports() -> int:
-    """Commit and push export files for Streamlit/Vercel redeploy."""
+    """Commit and push export files for Vercel redeploy."""
     commands = [
-        ["git", "add", "-f", "demo/export.json", "web/public/data/export.json"],
+        ["git", "add", "-f", "web/public/data/export.json"],
         ["git", "commit", "-m", "Auto-update dashboard export data"],
         ["git", "push", "origin", "HEAD"],
     ]
@@ -158,7 +150,6 @@ def main() -> int:
     print(f"  Interval:        every {config.interval_seconds // 60} minute(s)")
     print(f"  Scrape target:     {config.scrape_target or '(export only)'}")
     print(f"  Bot demo posts:    {config.post_bot_messages}")
-    print(f"  Sync Streamlit:    {config.sync_streamlit}")
     print(f"  Sync Vercel:       {config.sync_vercel}")
     print(f"  Git push:          {config.git_push}")
     print("Press Ctrl+C to stop.\n")

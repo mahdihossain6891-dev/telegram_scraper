@@ -6,6 +6,7 @@ import Link from "next/link";
 import { fetchAiHealth, generateReport, postAi } from "@/components/ai/api";
 import { ControlCenterDrawer } from "@/components/ai/controlCenter/ControlCenterDrawer";
 import { EmptyState } from "@/components/ai/EmptyState";
+import { ActionBriefPanel } from "@/components/ai/ActionBriefPanel";
 import { EvidencePanel } from "@/components/ai/EvidencePanel";
 import { InvestigationHeader } from "@/components/ai/InvestigationHeader";
 import { InvestigationResultCard } from "@/components/ai/InvestigationResultCard";
@@ -17,14 +18,11 @@ import { InvestigationWorkspaceBar } from "@/components/ai/InvestigationWorkspac
 import { ConsoleJumpNav } from "@/components/layout/ConsoleJumpNav";
 import { SimulationBanner } from "@/components/mode/SimulationBanner";
 import { useDataMode } from "@/components/mode/DataModeProvider";
-import { InvestigationWorkflowPanel,
-  type InvestigationWorkflow,
-} from "@/components/ai/InvestigationWorkflowPanel";
+import type { InvestigationWorkflow } from "@/components/ai/InvestigationWorkflowPanel";
 import { ModelSettingsPanel } from "@/components/ai/ModelSettingsPanel";
 import { QuickActions } from "@/components/ai/QuickActions";
 import { SavedCasesPanel } from "@/components/ai/SavedCasesPanel";
 import { SuggestedActions } from "@/components/ai/SuggestedActions";
-import { TargetRequiredPanel } from "@/components/ai/TargetRequiredPanel";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   createEmptyCase,
@@ -43,6 +41,7 @@ import {
   DEFAULT_SEARCH_PLACEHOLDER,
   QUICK_ACTIONS,
   REPORT_TYPES,
+  getQuickAction,
 } from "@/components/ai/types";
 import { parseThreatReport } from "@/components/ai/threat-report";
 import {
@@ -251,7 +250,7 @@ export function AiCopilotApp() {
   };
 
   const prepareAction = (actionId: string) => {
-    const action = QUICK_ACTIONS.find((a) => a.id === actionId);
+    const action = getQuickAction(actionId);
     if (!action) return;
 
     if (actionId === "generate_report") {
@@ -259,7 +258,11 @@ export function AiCopilotApp() {
         activeActionId: actionId,
         searchPlaceholder: action.placeholder,
         showReportForm: true,
-        targetGate: null,
+        targetGate: {
+          title: action.label,
+          message: `${action.description}\n\n${action.targetHint}.`,
+          actionId,
+        },
         view: "investigation",
       });
       focusSearch();
@@ -269,8 +272,12 @@ export function AiCopilotApp() {
     setInvestigationState({
       activeActionId: actionId,
       searchPlaceholder: action.placeholder,
-      targetGate: null,
       showReportForm: false,
+      targetGate: {
+        title: action.label,
+        message: `${action.description}\n\n${action.targetHint}.`,
+        actionId,
+      },
       view: "investigation",
     });
     focusSearch();
@@ -848,18 +855,27 @@ export function AiCopilotApp() {
               onScroll={onWorkspaceScroll}
             >
               {targetGate ? (
-                <TargetRequiredPanel
-                  title={targetGate.title}
-                  message={targetGate.message}
-                  onSearchUsers={() => {
+                <ActionBriefPanel
+                  actionId={targetGate.actionId || activeActionId || "investigate_user"}
+                  onClear={() =>
+                    setInvestigationState({
+                      targetGate: null,
+                      activeActionId: null,
+                      searchPlaceholder: DEFAULT_SEARCH_PLACEHOLDER,
+                      showReportForm: false,
+                    })
+                  }
+                  onFocusSearch={() => {
                     setInvestigationState({ targetGate: null });
                     focusSearch();
                   }}
-                  onDismiss={() => setInvestigationState({ targetGate: null })}
                 />
               ) : null}
               {pairs.length === 0 && !busy && !targetGate ? (
-                <EmptyState onSelectAction={prepareAction} />
+                <EmptyState
+                  onSelectAction={prepareAction}
+                  activeActionId={activeActionId}
+                />
               ) : (
                 pairs.map(({ query, answer }, index) => (
                   <div key={answer.id} className="ai-result-stack">
@@ -873,12 +889,6 @@ export function AiCopilotApp() {
                       }}
                       onSelectEntity={onSelectEntity}
                     />
-                    {answer.workflow ? (
-                      <InvestigationWorkflowPanel
-                        workflow={answer.workflow as InvestigationWorkflow}
-                        observability={answer.observability}
-                      />
-                    ) : null}
                     {index === pairs.length - 1 &&
                     !busy &&
                     answer.entityResolution?.status !== "ambiguous" &&
@@ -890,9 +900,10 @@ export function AiCopilotApp() {
                     !answer.refused ? (
                       <SuggestedActions
                         busy={busy}
-                        onAction={(prompt) =>
-                          void runInvestigation(prompt, { allowWithoutTarget: true })
-                        }
+                        onAction={(prompt, actionId) => {
+                          setInvestigationState({ activeActionId: actionId });
+                          void runInvestigation(prompt, { allowWithoutTarget: true });
+                        }}
                       />
                     ) : null}
                   </div>

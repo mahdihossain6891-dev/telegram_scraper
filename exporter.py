@@ -10,12 +10,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from config import Settings, ensure_directories, load_settings
-from database import get_session, init_db
+from database import MongoSession, get_session, init_db
 from models import Chat, ExtractedEntity, Message, User
+from personnel import ensure_user_activity, list_personnel
 from utils import get_logger, setup_logging
 
 logger = get_logger("exporter")
@@ -51,6 +49,9 @@ def _chat_rows(chats: list[Chat]) -> list[dict[str, Any]]:
             "chat_type": chat.chat_type,
             "created_at": _iso(chat.created_at),
             "updated_at": _iso(chat.updated_at),
+            "risk_score": chat.risk_score,
+            "risk_level": chat.risk_level,
+            "risk_factors": chat.risk_factors,
         }
         for chat in chats
     ]
@@ -85,6 +86,9 @@ def _message_rows(messages: list[Message]) -> list[dict[str, Any]]:
             "forward_from_message_id": message.forward_from_message_id,
             "views": message.views,
             "scraped_at": _iso(message.scraped_at),
+            "risk_score": message.risk_score,
+            "risk_level": message.risk_level,
+            "risk_factors": message.risk_factors,
         }
         for message in messages
     ]
@@ -128,20 +132,44 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 class DataExporter:
     """Load database records and export them to CSV and JSON."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: MongoSession) -> None:
         self.session = session
 
     def load_records(
         self,
     ) -> tuple[list[Chat], list[User], list[Message], list[ExtractedEntity]]:
         """Load all exportable records from the database."""
-        chats = self.session.scalars(select(Chat).order_by(Chat.id)).all()
-        users = self.session.scalars(select(User).order_by(User.id)).all()
-        messages = self.session.scalars(select(Message).order_by(Message.id)).all()
-        entities = self.session.scalars(
-            select(ExtractedEntity).order_by(ExtractedEntity.id)
-        ).all()
-        return chats, users, messages, entities
+        return (
+            self.session.list_chats(),
+            self.session.list_users(),
+            self.session.list_messages(),
+            self.session.list_entities(),
+        )
+
+    def build_payload(self) -> dict[str, Any]:
+        """Build the export.json-shaped payload from the current database."""
+        chats, users, messages, entities = self.load_records()
+        chat_rows = _chat_rows(chats)
+        user_rows = _user_rows(users)
+        message_rows = _message_rows(messages)
+        entity_rows = _entity_rows(entities)
+        ensure_user_activity(self.session)
+        personnel_rows = list_personnel(self.session, sort_by="suspicious_count")
+        return {
+            "exported_at": datetime.now().astimezone().isoformat(),
+            "counts": {
+                "chats": len(chat_rows),
+                "users": len(user_rows),
+                "messages": len(message_rows),
+                "entities": len(entity_rows),
+                "personnel": len(personnel_rows),
+            },
+            "chats": chat_rows,
+            "users": user_rows,
+            "messages": message_rows,
+            "entities": entity_rows,
+            "personnel": personnel_rows,
+        }
 
     def export_all(self, exports_dir: Path) -> ExportResult:
         """Export chats, users, messages, and entities to CSV and JSON."""
@@ -165,19 +193,7 @@ class DataExporter:
         _write_csv(csv_paths[3], entity_rows)
 
         json_path = exports_dir / "export.json"
-        payload = {
-            "exported_at": datetime.now().astimezone().isoformat(),
-            "counts": {
-                "chats": len(chat_rows),
-                "users": len(user_rows),
-                "messages": len(message_rows),
-                "entities": len(entity_rows),
-            },
-            "chats": chat_rows,
-            "users": user_rows,
-            "messages": message_rows,
-            "entities": entity_rows,
-        }
+        payload = self.build_payload()
         _write_json(json_path, payload)
 
         logger.info(
@@ -207,6 +223,31 @@ def run_export(settings: Settings | None = None) -> ExportResult:
     with get_session(cfg) as session:
         exporter = DataExporter(session)
         return exporter.export_all(cfg.exports_dir)
+
+
+def build_export_payload(
+    settings: Settings | None = None,
+    *,
+    database_name: str | None = None,
+) -> dict[str, Any]:
+    """Return the live export.json-shaped payload from MongoDB without writing files."""
+    cfg = ensure_directories(settings)
+    if database_name:
+        from database import get_db_by_name, get_session_for_database
+
+        with get_session_for_database(database_name, cfg) as session:
+            payload = DataExporter(session).build_payload()
+    else:
+        init_db(cfg)
+        with get_session(cfg) as session:
+            payload = DataExporter(session).build_payload()
+    if database_name:
+        payload["simulation"] = {
+            "database": database_name,
+            "environment": "simulation",
+            "isolated": True,
+        }
+    return payload
 
 
 def print_export_summary(result: ExportResult, exports_dir: Path) -> None:

@@ -1,0 +1,13 @@
+{
+  "technology": ["stack", "release", "benchmark", "roadmap", "saas", "hardware"],
+  "programming": ["docker", "api", "deploy", "debug", "refactor", "kubernetes"],
+  "marketplace": ["price", "condition", "pickup", "negotiable", "listing", "warranty"],
+  "synthetic_evaluation": [
+    "transfer fee",
+    "verify account",
+    "document package",
+    "discrete pickup",
+    "package ready",
+    "meet location"
+  ]
+}

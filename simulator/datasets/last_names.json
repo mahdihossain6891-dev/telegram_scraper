@@ -1,0 +1,26 @@
+{
+  "english": [
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Wilson",
+    "Moore", "Taylor", "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin"
+  ],
+  "bengali": [
+    "Rahman", "Ahmed", "Hossain", "Islam", "Chowdhury", "Akter", "Khan", "Begum",
+    "Malik", "Sarkar", "Das", "Roy", "Miah", "Uddin", "Alam", "Khatun"
+  ],
+  "hindi": [
+    "Sharma", "Patel", "Singh", "Kumar", "Gupta", "Verma", "Reddy", "Iyer",
+    "Joshi", "Mehta", "Kapoor", "Nair", "Chopra", "Malhotra", "Bose", "Das"
+  ],
+  "urdu": [
+    "Khan", "Malik", "Sheikh", "Qureshi", "Ansari", "Siddiqui", "Mirza", "Butt",
+    "Chaudhry", "Raza", "Hussain", "Abbasi", "Hashmi", "Javed", "Iqbal", "Farooq"
+  ],
+  "arabic": [
+    "Al-Farsi", "Haddad", "Nasser", "Saleh", "Khalil", "Mansour", "Hamdi", "Aziz",
+    "Barakat", "Said", "Rashid", "Qasim", "Darwish", "Fahmy", "Zaki", "Najjar"
+  ],
+  "malay": [
+    "Abdullah", "Rahman", "Ismail", "Hassan", "Yusof", "Othman", "Ibrahim", "Salleh",
+    "Azman", "Zainal", "Hamid", "Rosli", "Ahmad", "Latif", "Karim", "Noor"
+  ]
+}

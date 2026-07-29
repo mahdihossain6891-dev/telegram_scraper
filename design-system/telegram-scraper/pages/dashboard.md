@@ -1,50 +1,33 @@
 # Dashboard override — Telegram Scraper
 
-Overrides `MASTER.md` for the live OSINT ops dashboard (Streamlit + Vercel).
+Overrides `MASTER.md` for the live OSINT analytics dashboard (Next.js + FastAPI).
 
 ## Mode
 
-**Dark only** (ops / security monitoring). Light MASTER tokens are reference only.
+**Light Soft-UI** (Growlytics-inspired). Dark ops tokens are retired for the default theme.
+
+## First viewport composition
+
+1. Sidebar brand + nav groups  
+2. Page title + live status  
+3. Four KPI cards  
+4. Activity line chart + peak-hours heatmap  
+5. Personnel / channel table with risk bars  
 
 ## Tokens (implemented)
 
-| Role | Hex | Notes |
-|------|-----|-------|
-| Background | `#020617` | Near-black ops canvas |
-| Surface | `#0B1220` | Sidebar / panels |
-| Surface elevated | `#111827` | KPI cards, tables |
-| Primary | `#3B82F6` | Data / selection |
-| Accent | `#D97706` | Alerts, live pulse, CTAs |
-| Success | `#16A34A` | Healthy / live |
-| Destructive | `#DC2626` | Critical flags |
-| Foreground | `#E5EEFB` | Body text ≥ 4.5:1 |
-| Muted | `#94A3B8` | Labels, captions |
-| Border | `#334155` | Hairlines only |
+| Role | Hex |
+|------|-----|
+| Background | `#F4F5F9` |
+| Surface | `#FFFFFF` |
+| Primary | `#6D5EF6` |
+| Primary soft | `#EEF0FF` |
+| Success | `#10B981` |
+| Destructive | `#EF4444` |
+| Foreground | `#1F2937` |
+| Muted | `#6B7280` |
+| Border | `#E5E7EB` |
 
-## Typography
+## Charts
 
-- Headings / brand: **Fira Code**
-- Body / UI: **Fira Sans**
-- Base size: 15–16px; dense tables 13–14px
-- Line-height: 1.45–1.5
-
-## Layout
-
-- Sticky left rail (~280px), content fluid
-- Density 8/10: 8–16px gaps, compact KPI grid
-- Status strip above content: source · last export · live refresh
-- Page = one H1 + metrics first, then charts/tables
-
-## Interaction
-
-- Transitions 150–250ms (no bounce on tables)
-- Row hover highlight; focus rings use `--color-ring`
-- `prefers-reduced-motion: reduce` disables stagger
-- Charts: line/bar primary; avoid pie as sole category view
-
-## Anti-patterns
-
-- No emoji icons
-- No ornate glass/glow stacks
-- Do not remove filters
-- Do not rely on color alone for categories (labels + legend)
+Plotly light theme: purple line/bars, soft heatmap scale, muted axes, no dark template.

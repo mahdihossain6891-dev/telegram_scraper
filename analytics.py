@@ -10,13 +10,11 @@ from datetime import datetime
 from pathlib import Path
 
 import plotly.graph_objects as go
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 from config import Settings, ensure_directories, load_settings
-from database import get_session, init_db
+from database import MongoSession, get_session, init_db
 from entity_extractor import CONTENT_ENTITY_TYPES
-from models import Chat, ExtractedEntity, Message, User
+from models import Message
 from utils import get_logger, setup_logging
 
 logger = get_logger("analytics")
@@ -89,95 +87,109 @@ class AnalyticsSummary:
 class AnalyticsEngine:
     """Compute statistics and search results from stored messages."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: MongoSession) -> None:
         self.session = session
 
     def total_message_count(self) -> int:
         """Return the total number of stored messages."""
-        return int(self.session.scalar(select(func.count()).select_from(Message)) or 0)
+        return int(self.session.messages.count_documents({}))
 
     def messages_per_day(self, limit: int = 30) -> list[RankedCount]:
         """Return message counts grouped by calendar day."""
-        day_expr = func.date(Message.timestamp)
-        stmt = (
-            select(day_expr, func.count(Message.id))
-            .where(Message.timestamp.is_not(None))
-            .group_by(day_expr)
-            .order_by(day_expr.desc())
-            .limit(limit)
-        )
-        rows = self.session.execute(stmt).all()
+        pipeline = [
+            {"$match": {"timestamp": {"$ne": None}}},
+            {
+                "$group": {
+                    "_id": {
+                        "$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}
+                    },
+                    "count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"_id": -1}},
+            {"$limit": limit},
+        ]
+        rows = list(self.session.messages.aggregate(pipeline))
+        rows.reverse()
         return [
-            RankedCount(label=str(day), count=int(count))
-            for day, count in reversed(rows)
-            if day is not None
+            RankedCount(label=str(row["_id"]), count=int(row["count"]))
+            for row in rows
+            if row.get("_id")
         ]
 
     def messages_per_hour(self) -> list[RankedCount]:
         """Return message counts grouped by hour of day (0-23)."""
-        hour_expr = func.strftime("%H", Message.timestamp)
-        stmt = (
-            select(hour_expr, func.count(Message.id))
-            .where(Message.timestamp.is_not(None))
-            .group_by(hour_expr)
-            .order_by(hour_expr)
-        )
-        rows = self.session.execute(stmt).all()
+        pipeline = [
+            {"$match": {"timestamp": {"$ne": None}}},
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%H", "date": "$timestamp"}},
+                    "count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"_id": 1}},
+        ]
         return [
-            RankedCount(label=f"{hour}:00", count=int(count))
-            for hour, count in rows
-            if hour is not None
+            RankedCount(label=f"{row['_id']}:00", count=int(row["count"]))
+            for row in self.session.messages.aggregate(pipeline)
+            if row.get("_id") is not None
         ]
 
     def top_chats(self, limit: int = 10) -> list[RankedCount]:
         """Return chats ranked by stored message count."""
-        stmt = (
-            select(Chat.id, Chat.title, func.count(Message.id))
-            .join(Message, Message.chat_id == Chat.id)
-            .group_by(Chat.id, Chat.title)
-            .order_by(func.count(Message.id).desc())
-            .limit(limit)
-        )
-        return [
-            RankedCount(
-                label=title or f"Chat {chat_id}",
-                count=int(count),
-                detail=str(chat_id),
-            )
-            for chat_id, title, count in self.session.execute(stmt).all()
+        pipeline = [
+            {"$group": {"_id": "$chat_id", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": limit},
         ]
+        results: list[RankedCount] = []
+        for row in self.session.messages.aggregate(pipeline):
+            chat_id = int(row["_id"])
+            chat = self.session.get_chat(chat_id)
+            title = chat.title if chat else None
+            results.append(
+                RankedCount(
+                    label=title or f"Chat {chat_id}",
+                    count=int(row["count"]),
+                    detail=str(chat_id),
+                )
+            )
+        return results
 
     def top_senders(self, limit: int = 10) -> list[RankedCount]:
         """Return senders ranked by stored message count."""
-        stmt = (
-            select(User.id, User.username, User.first_name, func.count(Message.id))
-            .join(Message, Message.sender_id == User.id)
-            .group_by(User.id, User.username, User.first_name)
-            .order_by(func.count(Message.id).desc())
-            .limit(limit)
-        )
+        pipeline = [
+            {"$match": {"sender_id": {"$ne": None}}},
+            {"$group": {"_id": "$sender_id", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": limit},
+        ]
         results: list[RankedCount] = []
-        for user_id, username, first_name, count in self.session.execute(stmt).all():
-            label = username or first_name or f"User {user_id}"
-            if username and first_name:
-                label = f"{first_name} (@{username})"
+        for row in self.session.messages.aggregate(pipeline):
+            user_id = int(row["_id"])
+            user = self.session.get_user(user_id)
+            if user and user.username and user.first_name:
+                label = f"{user.first_name} (@{user.username})"
+            elif user:
+                label = user.username or user.first_name or f"User {user_id}"
+            else:
+                label = f"User {user_id}"
             results.append(
-                RankedCount(label=label, count=int(count), detail=str(user_id))
+                RankedCount(label=label, count=int(row["count"]), detail=str(user_id))
             )
         return results
 
     def top_entities(self, entity_type: str, limit: int = 10) -> list[RankedCount]:
         """Return top extracted entities for a given type."""
-        stmt = (
-            select(ExtractedEntity.entity_value, func.count(ExtractedEntity.id))
-            .where(ExtractedEntity.entity_type == entity_type)
-            .group_by(ExtractedEntity.entity_value)
-            .order_by(func.count(ExtractedEntity.id).desc())
-            .limit(limit)
-        )
+        pipeline = [
+            {"$match": {"entity_type": entity_type}},
+            {"$group": {"_id": "$entity_value", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": limit},
+        ]
         return [
-            RankedCount(label=value, count=int(count))
-            for value, count in self.session.execute(stmt).all()
+            RankedCount(label=str(row["_id"]), count=int(row["count"]))
+            for row in self.session.entities.aggregate(pipeline)
         ]
 
     def top_domains(self, limit: int = 10) -> list[RankedCount]:
@@ -190,27 +202,29 @@ class AnalyticsEngine:
 
     def keyword_flag_counts(self) -> list[RankedCount]:
         """Return counts for keyword flag categories and terms."""
-        stmt = (
-            select(ExtractedEntity.entity_type, ExtractedEntity.entity_value, func.count())
-            .where(ExtractedEntity.entity_type.not_in(tuple(CONTENT_ENTITY_TYPES)))
-            .group_by(ExtractedEntity.entity_type, ExtractedEntity.entity_value)
-            .order_by(func.count().desc())
-        )
+        pipeline = [
+            {"$match": {"entity_type": {"$nin": list(CONTENT_ENTITY_TYPES)}}},
+            {
+                "$group": {
+                    "_id": {"type": "$entity_type", "value": "$entity_value"},
+                    "count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"count": -1}},
+        ]
         return [
             RankedCount(
-                label=f"{entity_type}: {entity_value}",
-                count=int(count),
+                label=f"{row['_id']['type']}: {row['_id']['value']}",
+                count=int(row["count"]),
             )
-            for entity_type, entity_value, count in self.session.execute(stmt).all()
+            for row in self.session.entities.aggregate(pipeline)
         ]
 
     def word_frequency(self, limit: int = 20) -> list[RankedCount]:
         """Return the most common words across message text."""
-        texts = self.session.scalars(
-            select(Message.text).where(Message.text.is_not(None))
-        ).all()
         counter: Counter[str] = Counter()
-        for text in texts:
+        for doc in self.session.messages.find({"text": {"$ne": None}}, {"text": 1}):
+            text = doc.get("text")
             if not text:
                 continue
             for token in WORD_PATTERN.findall(text.lower()):
@@ -228,24 +242,25 @@ class AnalyticsEngine:
         if not cleaned:
             return []
 
-        pattern = f"%{cleaned}%"
-        stmt = (
-            select(Message, Chat.title)
-            .join(Chat, Chat.id == Message.chat_id, isouter=True)
-            .where(Message.text.ilike(pattern))
-            .order_by(Message.timestamp.desc())
+        hits: list[SearchHit] = []
+        cursor = (
+            self.session.messages.find(
+                {"text": {"$regex": re.escape(cleaned), "$options": "i"}}
+            )
+            .sort("timestamp", -1)
             .limit(limit)
         )
-        hits: list[SearchHit] = []
-        for message, chat_title in self.session.execute(stmt).all():
+        for doc in cursor:
+            message = Message.from_doc(doc)
+            chat = self.session.get_chat(message.chat_id)
             hits.append(
                 SearchHit(
-                    message_row_id=message.id,
+                    message_row_id=message.id or 0,
                     chat_id=message.chat_id,
                     message_id=message.message_id,
                     timestamp=message.timestamp,
                     text=message.text,
-                    chat_title=chat_title,
+                    chat_title=chat.title if chat else None,
                 )
             )
         return hits
@@ -345,41 +360,25 @@ def run_analytics(
     with get_session(cfg) as session:
         engine = AnalyticsEngine(session)
         summary = engine.build_summary()
-
         if search_query:
             hits = engine.search_messages(search_query)
             print(f"\nSearch results for {search_query!r}: {len(hits)}")
-            for hit in hits[:10]:
-                preview = (hit.text or "")[:120].replace("\n", " ")
-                print(
-                    f"  - chat={hit.chat_title or hit.chat_id} "
-                    f"msg_id={hit.message_id} ts={hit.timestamp} :: {preview}"
-                )
+            for hit in hits[:20]:
+                preview = (hit.text or "")[:80].replace("\n", " ")
+                print(f"  - [{hit.chat_title}] {preview}")
 
-    if save_html_charts and summary.total_messages > 0:
+    if save_html_charts:
         save_charts(summary, cfg.exports_dir)
-
     return summary
 
 
 def main() -> None:
-    """CLI entry point for analytics."""
+    """CLI entry point."""
     cfg = ensure_directories()
     setup_logging(cfg)
-
-    search_query = None
-    if len(sys.argv) > 1:
-        search_query = " ".join(sys.argv[1:])
-
-    summary = run_analytics(cfg, search_query=search_query)
+    query = sys.argv[1] if len(sys.argv) > 1 else None
+    summary = run_analytics(cfg, search_query=query)
     print_summary(summary)
-
-    if summary.total_messages == 0:
-        print("\nNo stored messages yet. Run scrape.bat first.")
-        raise SystemExit(0)
-
-    if cfg.exports_dir.exists():
-        print(f"\nCharts saved under: {cfg.exports_dir}")
 
 
 if __name__ == "__main__":

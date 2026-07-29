@@ -4,6 +4,7 @@ import {
   PRIVATE_CHAT_TYPE,
   STOP_WORDS,
 } from "./constants";
+import { classifyRisk, scoreMessageClient } from "./risk";
 import type {
   ChatSummaryRow,
   DashboardFilters,
@@ -60,6 +61,8 @@ export function buildExportDashboard(payload: ExportPayload): ExportDashboardDat
       narcotics: 0,
       human_trafficking: 0,
       firearms: 0,
+      risk_score: chat.risk_score || 0,
+      risk_level: chat.risk_level || classifyRisk(chat.risk_score || 0),
     });
   }
 
@@ -86,6 +89,8 @@ export function buildExportDashboard(payload: ExportPayload): ExportDashboardDat
       narcotics: 0,
       human_trafficking: 0,
       firearms: 0,
+      risk_score: chat?.risk_score || 0,
+      risk_level: chat?.risk_level || "Low",
     };
     chatSummaries.set(message.chat_id, summary);
     summary.messages += 1;
@@ -109,6 +114,12 @@ export function buildExportDashboard(payload: ExportPayload): ExportDashboardDat
       }
     }
 
+    const keywordValues = keywordEntities.map((entity) => entity.entity_value);
+    const scored =
+      message.risk_score != null && message.risk_level
+        ? { score: message.risk_score, level: message.risk_level }
+        : scoreMessageClient(keywordValues, categories, message.text || "");
+
     return {
       chat_id: message.chat_id,
       chat: chat?.title || `Chat ${message.chat_id}`,
@@ -117,11 +128,16 @@ export function buildExportDashboard(payload: ExportPayload): ExportDashboardDat
       timestamp: message.timestamp || "",
       sender: senderLabel(payload.users, message.sender_id),
       categories: categories.join(", "),
-      keywords: keywordEntities.map((entity) => entity.entity_value).join(", "),
+      keywords: keywordValues.join(", "),
       entities: messageEntities.length,
       views: message.views ?? "",
       media_type: message.media_type || "",
+      reply_to_message_id: message.reply_to_message_id,
+      forward_from_chat_id: message.forward_from_chat_id,
+      forward_from_message_id: message.forward_from_message_id,
       text: message.text || "",
+      risk_score: scored.score,
+      risk_level: scored.level,
     };
   });
 
@@ -141,7 +157,19 @@ export function buildExportDashboard(payload: ExportPayload): ExportDashboardDat
 
   const summaries = [...chatSummaries.values()]
     .filter((summary) => summary.messages > 0)
-    .sort((a, b) => b.messages - a.messages || a.title.localeCompare(b.title));
+    .map((summary) => {
+      if (summary.risk_score > 0) {
+        return summary;
+      }
+      const chatMessages = messages.filter((row) => row.chat_id === summary.chat_id);
+      const top = Math.max(0, ...chatMessages.map((row) => row.risk_score || 0));
+      return {
+        ...summary,
+        risk_score: top,
+        risk_level: classifyRisk(top),
+      };
+    })
+    .sort((a, b) => b.risk_score - a.risk_score || b.messages - a.messages || a.title.localeCompare(b.title));
 
   const entityTypes = [...new Set(payload.entities.map((entity) => entity.entity_type))].sort();
 
@@ -420,4 +448,50 @@ export function computeInsights(
 export function timestampBounds(messages: MessageDisplayRow[]) {
   const days = messages.map((row) => row.timestamp.slice(0, 10)).filter(Boolean).sort();
   return { min: days[0] || "", max: days[days.length - 1] || "" };
+}
+
+/** Count collection sources by chat type. */
+export function collectionBreakdown(chats: ExportPayload["chats"]) {
+  let channels = 0;
+  let groups = 0;
+  let privateDms = 0;
+  for (const chat of chats) {
+    const type = (chat.chat_type || "").toLowerCase();
+    if (type === "channel") channels += 1;
+    else if (type === "private chat") privateDms += 1;
+    else groups += 1;
+  }
+  return { channels, groups, privateDms, total: chats.length };
+}
+
+/** Stack keyword categories by source chat type for analytics. */
+export function categoryBySourceType(messages: MessageDisplayRow[]) {
+  const buckets = new Map<
+    string,
+    { source_type: string; narcotics: number; human_trafficking: number; firearms: number }
+  >();
+
+  for (const row of messages) {
+    const raw = (row.chat_type || "unknown").toLowerCase();
+    let source_type = "Other";
+    if (raw === "channel") source_type = "Channel";
+    else if (raw === "private chat") source_type = "Private DM";
+    else if (raw.includes("group")) source_type = "Group";
+
+    const bucket = buckets.get(source_type) || {
+      source_type,
+      narcotics: 0,
+      human_trafficking: 0,
+      firearms: 0,
+    };
+    const cats = row.categories.split(",").map((c) => c.trim()).filter(Boolean);
+    for (const cat of cats) {
+      if (cat === "narcotics") bucket.narcotics += 1;
+      else if (cat === "human_trafficking") bucket.human_trafficking += 1;
+      else if (cat === "firearms") bucket.firearms += 1;
+    }
+    buckets.set(source_type, bucket);
+  }
+
+  return [...buckets.values()].sort((a, b) => a.source_type.localeCompare(b.source_type));
 }

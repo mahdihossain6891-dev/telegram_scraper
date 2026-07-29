@@ -3,15 +3,23 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { DashboardApp } from "@/components/DashboardApp";
+import { useDataMode } from "@/components/mode/DataModeProvider";
 import type { ExportPayload } from "@/lib/types";
 
 type ApiResponse = {
   source: string;
   payload: ExportPayload;
+  mode?: string;
+  simulation_state?: {
+    simulation_active?: boolean;
+    scenario?: string | null;
+    session_id?: string | null;
+  };
   error?: string;
 };
 
 export default function HomePage() {
+  const { mode, simulation } = useDataMode();
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -36,23 +44,25 @@ export default function HomePage() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, mode, simulation.session_id, simulation.simulation_active]);
 
   useEffect(() => {
     if (!autoRefresh) {
       return;
     }
-    const timer = window.setInterval(loadData, refreshSeconds * 1000);
+    const intervalSeconds = mode === "simulation" ? 5 : refreshSeconds;
+    const timer = window.setInterval(loadData, intervalSeconds * 1000);
     return () => window.clearInterval(timer);
-  }, [autoRefresh, refreshSeconds, loadData]);
+  }, [autoRefresh, refreshSeconds, loadData, mode]);
 
   if (error) {
     return (
       <main className="standalone-main">
-        <div className="hero">
-          <h1>Telegram Intelligence Dashboard</h1>
-        </div>
-        <div className="error">{error}</div>
+        <span className="page-header">
+          <h1>Threat Console</h1>
+          <p>Could not load dashboard data.</p>
+        </span>
+        <span className="error">{error}</span>
       </main>
     );
   }
@@ -60,10 +70,28 @@ export default function HomePage() {
   if (!data) {
     return (
       <main className="standalone-main">
-        <div className="hero">
-          <h1>Telegram Intelligence Dashboard</h1>
-          <p>Loading export data...</p>
-        </div>
+        <span className="page-header">
+          <h1>Threat Console</h1>
+          <p>Loading command posture…</p>
+        </span>
+        <span className="metric-grid">
+          <span className="metric-card">
+            <span className="metric-label">Preparing</span>
+            <span className="metric-value">…</span>
+          </span>
+          <span className="metric-card">
+            <span className="metric-label">Charts</span>
+            <span className="metric-value">…</span>
+          </span>
+          <span className="metric-card">
+            <span className="metric-label">Tables</span>
+            <span className="metric-value">…</span>
+          </span>
+          <span className="metric-card">
+            <span className="metric-label">Risk</span>
+            <span className="metric-value">…</span>
+          </span>
+        </span>
       </main>
     );
   }

@@ -30,6 +30,9 @@ KEYWORDS_BY_CATEGORY: dict[Category, tuple[str, ...]] = {
         "drugs",
     ),
     "human_trafficking": (
+        "passport for sale",
+        "passports for sale",
+        "fake passport",
         "human trafficking",
         "sex trafficking",
         "trafficking victims",
@@ -57,6 +60,8 @@ KEYWORDS_BY_CATEGORY: dict[Category, tuple[str, ...]] = {
         "ammunition deal",
         "illegal weapons",
         "assault rifle sale",
+        "ak-47",
+        "ak47",
         "arms trafficking",
         "gun running",
         "gun",
